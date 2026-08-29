@@ -23,7 +23,7 @@
 <script>
 (function(){
   var p=new URLSearchParams(location.search),module=p.get('module')||'command',metric=p.get('metric')||'Security Metric Analysis';
-  var names={command:'Command Center',cases:'Case Management',soc:'SOC Operations',evidence:'Evidence Vault',custody:'Chain of Custody',endpoint:'Endpoint Forensics',network:'Network Forensics',assets:'Asset Intelligence',vulns:'Vulnerabilities',siem:'SIEM Explorer',identity:'Identity Security',cloud:'Email & Cloud',intel:'Threat Intelligence',risk:'Risk & Compliance',reports:'Reports',ai:'Centinell AI',settings:'Settings'};
+  var names={command:'Command Center',cases:'Case Management',soc:'SOC Operations',evidence:'Evidence Vault',custody:'Chain of Custody',endpoint:'Endpoint Forensics',network:'Network Forensics',assets:'Asset Intelligence',vulns:'Vulnerabilities',siem:'SIEM Explorer',investigation:'Advanced Investigation Console',identity:'Identity Security',cloud:'Email & Cloud',intel:'Threat Intelligence',risk:'Risk & Compliance',reports:'Reports',ai:'Centinell AI',settings:'Settings'};
   document.getElementById('moduleName').textContent=names[module]||module;
   document.getElementById('metricName').textContent=metric+' — Technical Analysis';
   document.getElementById('metricValue').textContent=p.get('value')||'—';

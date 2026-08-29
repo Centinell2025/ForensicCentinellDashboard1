@@ -21,6 +21,7 @@ test('tenant-scoped dashboard, evidence, and analysis endpoints are declared', (
   assert.match(server, /app\.get\('\/api\/v1\/dashboard\/summary', requireAuth/);
   assert.match(server, /app\.get\('\/api\/v1\/evidence', requireAuth/);
   assert.match(server, /app\.get\('\/api\/v1\/analysis', requireAuth/);
+  assert.match(server, /app\.post\('\/api\/v1\/investigation\/execute', requireAuth/);
   assert.match(server, /withTenant\(req\.auth\.org/);
   assert.doesNotMatch(server, /encrypted_data_key "encryptedDataKey"/);
 });

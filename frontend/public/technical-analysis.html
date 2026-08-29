@@ -23,7 +23,7 @@
 <script>
 (function(){
   var p=new URLSearchParams(location.search),module=p.get('module')||'command',metric=p.get('metric')||'Security Metric Analysis';
-  var names={command:'Command Center',cases:'Case Management',soc:'SOC Operations',evidence:'Evidence Vault',custody:'Chain of Custody',endpoint:'Endpoint Forensics',network:'Network Forensics',assets:'Asset Intelligence',vulns:'Vulnerabilities',siem:'SIEM Explorer',identity:'Identity Security',cloud:'Email & Cloud',intel:'Threat Intelligence',risk:'Risk & Compliance',reports:'Reports',ai:'Centinell AI',settings:'Settings'};
+  var names={command:'Command Center',cases:'Case Management',soc:'SOC Operations',evidence:'Evidence Vault',custody:'Chain of Custody',endpoint:'Endpoint Forensics',network:'Network Forensics',assets:'Asset Intelligence',vulns:'Vulnerabilities',siem:'SIEM Explorer',investigation:'Advanced Investigation Console',identity:'Identity Security',cloud:'Email & Cloud',intel:'Threat Intelligence',risk:'Risk & Compliance',reports:'Reports',ai:'Centinell AI',settings:'Settings'};
   document.getElementById('moduleName').textContent=names[module]||module;
   document.getElementById('metricName').textContent=metric+' — Technical Analysis';
   document.getElementById('metricValue').textContent=p.get('value')||'—';
@@ -34,4 +34,3 @@
   document.getElementById('exportBrief').onclick=function(){var text=['CENTINELL TECHNICAL ANALYSIS',names[module]||module,metric,'Observed: '+(p.get('value')||'—'),'Context: '+(p.get('context')||''),'','Analyst notes:',document.getElementById('notes').value,'','Synthetic demonstration data — human validation required.'].join('\n');var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type:'text/plain'}));a.download='centinell-analysis-'+module+'.txt';a.click();URL.revokeObjectURL(a.href)};
 })();
 </script></body></html>
-

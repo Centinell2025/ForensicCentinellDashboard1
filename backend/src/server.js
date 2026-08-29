@@ -14,6 +14,7 @@ const { query, transaction, withTenant, migrate } = require('./db');
 const { emitSecurityEvent } = require('./security/telemetry');
 const metrics = require('./metrics');
 const { anchorAllTenants } = require('./security/audit-anchor');
+const { COMMANDS, classifyIndicator, virusTotalLookup, taxiiLookup, packetSummary } = require('./security/investigation-console');
 
 const app = express();
 app.disable('x-powered-by');
@@ -159,6 +160,36 @@ app.get('/api/v1/analysis', requireAuth, asyncRoute(async (req, res) => {
       auditEvents: events.rows, auditChainValid: chain.rows[0].valid };
   });
   res.json({ analysis, generatedAt: new Date().toISOString(), tenant: req.auth.org });
+}));
+
+const investigationSchema = z.object({
+  command: z.enum(COMMANDS),
+  argument: z.string().max(120000).default('')
+});
+app.post('/api/v1/investigation/execute', requireAuth, allow('admin','analyst','auditor'), asyncRoute(async (req, res) => {
+  const input = investigationSchema.parse(req.body);
+  let result;
+  if (input.command === 'help') {
+    result = { commands: COMMANDS, safety: 'Allowlisted defensive operations only; no operating-system shell is exposed.' };
+  } else if (input.command === 'packet-summary') {
+    result = packetSummary(input.argument);
+  } else if (input.command === 'ioc') {
+    const indicator = classifyIndicator(input.argument);
+    const local = await withTenant(req.auth.org, client => client.query(`SELECT id,action,entity_type "entityType",
+      entity_id "entityId",created_at "createdAt" FROM audit_events WHERE organization_id=$1
+      AND (metadata::text ILIKE $2 OR entity_id ILIKE $2) ORDER BY created_at DESC LIMIT 25`, [req.auth.org, `%${indicator.value}%`]));
+    const [virusTotal, taxii] = await Promise.all([virusTotalLookup(indicator), taxiiLookup(indicator)]);
+    result = { indicator, localMatches: local.rows, virusTotal, taxii };
+  } else {
+    result = await withTenant(req.auth.org, async client => {
+      if (input.command === 'cases') return { rows:(await client.query(`SELECT case_number "caseNumber",title,priority,status,updated_at "updatedAt" FROM cases WHERE organization_id=$1 ORDER BY updated_at DESC LIMIT 25`, [req.auth.org])).rows };
+      if (input.command === 'evidence') return { rows:(await client.query(`SELECT e.object_key "objectKey",e.plaintext_sha256 "sha256",e.cipher,e.size_bytes "sizeBytes",c.case_number "caseNumber",e.created_at "createdAt" FROM evidence_objects e JOIN cases c ON c.id=e.case_id WHERE e.organization_id=$1 ORDER BY e.created_at DESC LIMIT 25`, [req.auth.org])).rows };
+      if (input.command === 'audit') return { rows:(await client.query(`SELECT id,action,entity_type "entityType",entity_id "entityId",event_hash "eventHash",created_at "createdAt" FROM audit_events WHERE organization_id=$1 ORDER BY created_at DESC LIMIT 25`, [req.auth.org])).rows };
+      return { valid:(await client.query('SELECT centinell_verify_audit_chain($1) AS valid', [req.auth.org])).rows[0].valid };
+    });
+  }
+  await audit(req, 'investigation.command_executed', 'investigation_console', null, { command:input.command, argumentCharacters:input.argument.length });
+  res.json({ command:input.command, result, executedAt:new Date().toISOString() });
 }));
 app.post('/api/v1/cases', requireAuth, allow('admin','analyst'), asyncRoute(async (req, res) => {
   const input = caseSchema.parse(req.body);

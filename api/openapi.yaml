@@ -46,6 +46,49 @@ paths:
       security: [{ cookieAuth: [] }]
       responses:
         '200': { description: Audit event list }
+  /dashboard/summary:
+    get:
+      summary: Return tenant-scoped operational metrics and audit-chain status
+      security: [{ cookieAuth: [] }]
+      responses:
+        '200': { description: Current dashboard summary }
+        '401': { $ref: '#/components/responses/Problem' }
+  /evidence:
+    get:
+      summary: List safe evidence metadata without cryptographic key material
+      security: [{ cookieAuth: [] }]
+      responses:
+        '200': { description: Tenant evidence metadata }
+        '401': { $ref: '#/components/responses/Problem' }
+  /analysis:
+    get:
+      summary: Correlate cases, evidence metadata, and hash-chained audit events
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - { name: module, in: query, schema: { type: string } }
+        - { name: metric, in: query, schema: { type: string } }
+      responses:
+        '200': { description: Tenant-scoped technical analysis }
+        '401': { $ref: '#/components/responses/Problem' }
+  /investigation/execute:
+    post:
+      summary: Execute an allowlisted defensive investigation operation
+      description: Does not expose an operating-system shell. Every accepted command is tenant-scoped and audited.
+      security: [{ cookieAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [command]
+              properties:
+                command: { type: string, enum: [help, cases, evidence, audit, chain-verify, ioc, packet-summary] }
+                argument: { type: string, maxLength: 120000 }
+      responses:
+        '200': { description: Defensive analysis result }
+        '400': { $ref: '#/components/responses/Problem' }
+        '403': { $ref: '#/components/responses/Problem' }
 components:
   securitySchemes:
     cookieAuth: { type: apiKey, in: cookie, name: centinell_session }
