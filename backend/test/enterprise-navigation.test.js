@@ -8,7 +8,7 @@ const root = path.join(__dirname, '..', '..');
 test('enterprise frontend includes SPA routing, metric metadata, and technical modal', () => {
   const script = fs.readFileSync(path.join(root, 'frontend/public/enterprise-dashboard.js'), 'utf8');
   const html = fs.readFileSync(path.join(root, 'frontend/public/index.html'), 'utf8');
-  assert.match(script, /history\.pushState/);
+  assert.match(script, /'replaceState':'pushState'/);
   assert.match(script, /dataset\.metric/);
   assert.match(script, /centinell:metric-selected/);
   assert.match(script, /wireRecordRows/);
@@ -17,6 +17,11 @@ test('enterprise frontend includes SPA routing, metric metadata, and technical m
   assert.match(script, /localStorage\.setItem/);
   assert.match(script, /page\.classList\.toggle\('active'/);
   assert.match(script, /corporateModules/);
+  assert.match(script, /window\.CentinellState/);
+  assert.match(script, /command\/ai-forensics/);
+  assert.match(script, /command\/support-center/);
+  assert.match(script, /command\/crm-integration/);
+  assert.match(script, /commandModuleHost/);
   assert.match(script, /\/api\/v1\/corporate\//);
   assert.match(html, /corporate-launch-grid/);
   assert.match(script, /\/api\/v1\/dashboard\/summary/);
