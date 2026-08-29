@@ -50,8 +50,14 @@ async function migrate() {
       name text NOT NULL,
       slug text NOT NULL UNIQUE,
       plan text NOT NULL DEFAULT 'trial',
+      timezone text NOT NULL DEFAULT 'UTC',
+      evidence_retention_days integer NOT NULL DEFAULT 2555 CHECK (evidence_retention_days BETWEEN 1 AND 36500),
+      notification_preferences jsonb NOT NULL DEFAULT '{}'::jsonb,
       created_at timestamptz NOT NULL DEFAULT now()
     );
+    ALTER TABLE organizations ADD COLUMN IF NOT EXISTS timezone text NOT NULL DEFAULT 'UTC';
+    ALTER TABLE organizations ADD COLUMN IF NOT EXISTS evidence_retention_days integer NOT NULL DEFAULT 2555;
+    ALTER TABLE organizations ADD COLUMN IF NOT EXISTS notification_preferences jsonb NOT NULL DEFAULT '{}'::jsonb;
     CREATE TABLE IF NOT EXISTS users (
       id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
       organization_id uuid NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,

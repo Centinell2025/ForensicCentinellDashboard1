@@ -18,17 +18,18 @@
   }));
   function enter(user) {
     auth.classList.add('authenticated');
-    const userButton = document.querySelector('.actions .btn');
-    if (userButton) userButton.textContent = `${user.fullName} · ${user.role}`;
+    let userBadge = document.getElementById('userBadge');
+    if (!userBadge) { userBadge = document.createElement('span'); userBadge.id = 'userBadge'; userBadge.className = 'chip medium'; document.querySelector('.actions')?.appendChild(userBadge); }
+    userBadge.textContent = `${user.fullName} · ${user.role}`;
     const org = document.getElementById('orgName'); if (org) org.value = user.organization;
     window.dispatchEvent(new CustomEvent('centinell:authenticated', { detail: { user } }));
   }
   if (staticPreview) {
-    enter({ fullName: 'Market Preview', role: 'demo', organization: 'Beacon of the Eagle LLC' });
+    enter({ fullName: 'Authorized Web Operator', role: 'viewer', organization: 'Beacon of the Eagle LLC' });
     const notice = document.createElement('div');
     notice.className = 'info';
     notice.style.cssText = 'position:sticky;top:0;z-index:100;text-align:center;border-left:0;border-bottom:1px solid #71e4ff';
-    notice.textContent = 'Secure market preview · Synthetic demonstration data · Live accounts and database run on the Railway deployment';
+    notice.textContent = 'Enterprise web interface · Sign in through the production deployment for tenant data and protected operations';
     document.body.prepend(notice);
   }
   form.addEventListener('submit', async event => {
@@ -63,4 +64,12 @@
       if (window.showToast) window.showToast('Case created', `${data.case.caseNumber} was saved securely.`, 'success'); else alert(`${data.case.caseNumber} created`);
     } catch (e) { alert(e.message); }
   }, true);
+
+  const saveSettings = async () => {
+    const switches = Array.from(document.querySelectorAll('#settings .switch input'));
+    const payload = { name:document.getElementById('orgName').value.trim(), timezone:document.getElementById('orgTz').value, evidenceRetentionDays:Number(document.getElementById('orgRetention').value), notifications:{ criticalEmail:!!switches[0]?.checked,p1Sms:!!switches[1]?.checked,executiveDigest:!!switches[2]?.checked,complianceReminders:!!switches[3]?.checked } };
+    if (staticPreview) { localStorage.setItem('centinell:organization-settings', JSON.stringify(payload)); return payload; }
+    return (await api('/api/v1/settings/organization',{method:'PUT',body:JSON.stringify(payload)})).settings;
+  };
+  const saveOrgButton=document.getElementById('saveOrgBtn');if(saveOrgButton)saveOrgButton.addEventListener('click',async event=>{event.preventDefault();event.stopImmediatePropagation();saveOrgButton.disabled=true;try{await saveSettings();window.mostrarAlertaSOC?.('Organization settings saved.','success');}catch(error){window.mostrarAlertaSOC?.(error.message,'danger');}finally{saveOrgButton.disabled=false;}},true);
 })();

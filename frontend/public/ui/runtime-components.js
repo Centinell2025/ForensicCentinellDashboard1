@@ -26,11 +26,18 @@
   function applyRBAC(user) {
     var denied = roleAccess[user.role];
     document.querySelectorAll('.nav button[data-page]').forEach(function (button) { var blocked = Array.isArray(denied) && denied.includes(button.dataset.page); button.hidden = blocked; button.setAttribute('aria-hidden', blocked ? 'true' : 'false'); });
-    var canWrite = user.role === 'admin' || user.role === 'analyst' || user.role === 'demo';
+    var canWrite = user.role === 'admin' || user.role === 'analyst' || global.location.hostname.endsWith('github.io');
     document.querySelectorAll('.corporate-entry-form button[type="submit"],[data-delete-record]').forEach(function (button) { button.disabled = !canWrite; button.title = canWrite ? '' : 'Write access requires administrator or analyst role'; });
     document.documentElement.dataset.role = user.role;
   }
   lifecycle.listen(global, 'centinell:authenticated', function (event) { applyRBAC(event.detail.user); });
+
+  var notificationButton=document.getElementById('notifBtn');
+  if(notificationButton){
+    var drawer=document.createElement('aside');drawer.id='notificationDrawer';drawer.className='notification-drawer';drawer.hidden=true;drawer.setAttribute('aria-label','Security notifications');drawer.innerHTML='<div class="head"><h2>Security Notifications</h2><button class="btn" data-notification-close aria-label="Close notifications">✕</button></div><div class="activity"><button class="notification-item" data-go="soc"><b>3 critical SOC alerts</b><span>Open the SOC queue for investigation.</span></button><button class="notification-item" data-go="cases"><b>2 case updates</b><span>New activity requires analyst review.</span></button><button class="notification-item" data-go="custody"><b>1 custody verification</b><span>Review the latest evidence ledger event.</span></button></div><button class="btn" data-notification-read>Mark all as reviewed</button>';document.body.appendChild(drawer);
+    lifecycle.listen(notificationButton,'click',function(event){event.stopImmediatePropagation();drawer.hidden=!drawer.hidden;notificationButton.setAttribute('aria-expanded',drawer.hidden?'false':'true')},true);
+    lifecycle.listen(drawer,'click',function(event){if(event.target.closest('[data-notification-close]'))drawer.hidden=true;if(event.target.closest('[data-notification-read]')){notificationButton.textContent='◔ 0';drawer.hidden=true;toast('Notifications marked as reviewed.','success')}var route=event.target.closest('[data-go]');if(route){drawer.hidden=true;global.CentinellRouter.navigate(route.dataset.go)}});
+  }
 
   function csvEscape(value) { var text = String(value == null ? '' : value); return /[",\n]/.test(text) ? '"' + text.replace(/"/g, '""') + '"' : text; }
   function exportCommandCsv() { var rows = [['Metric','Value','Context']]; document.querySelectorAll('#command .card').forEach(function (card) { rows.push([(card.querySelector('.sub') || {}).textContent || '', (card.querySelector('.metric') || {}).textContent || '', (card.querySelector('.metric + span') || {}).textContent || '']); }); var csv = rows.map(function (row) { return row.map(csvEscape).join(','); }).join('\n'), link = document.createElement('a'); link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' })); link.download = 'centinell-command-center.csv'; link.click(); setTimeout(function () { URL.revokeObjectURL(link.href); }, 0); }

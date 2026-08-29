@@ -99,6 +99,24 @@ app.get('/api/v1/auth/me', requireAuth, asyncRoute(async (req, res) => {
   const u = result.rows[0]; res.json({ user: { id: u.id, email: u.email, fullName: u.full_name, role: u.role, organization: u.organization } });
 }));
 
+const organizationSettingsSchema = z.object({
+  name: z.string().trim().min(2).max(120),
+  timezone: z.string().trim().min(2).max(80).regex(/^[A-Za-z_+\/-]+$/),
+  evidenceRetentionDays: z.number().int().min(1).max(36500),
+  notifications: z.object({ criticalEmail:z.boolean(), p1Sms:z.boolean(), executiveDigest:z.boolean(), complianceReminders:z.boolean() }).default({ criticalEmail:true,p1Sms:true,executiveDigest:true,complianceReminders:false })
+});
+app.get('/api/v1/settings/organization', requireAuth, asyncRoute(async (req, res) => {
+  const result=await query(`SELECT name,timezone,evidence_retention_days "evidenceRetentionDays",notification_preferences notifications
+    FROM organizations WHERE id=$1`,[req.auth.org]);
+  if(!result.rows[0])return res.status(404).json({title:'Organization not found',status:404});res.json({settings:result.rows[0]});
+}));
+app.put('/api/v1/settings/organization', requireAuth, allow('admin'), asyncRoute(async (req, res) => {
+  const input=organizationSettingsSchema.parse(req.body);
+  const settings=await transaction(async client=>{await client.query("SELECT set_config('app.current_organization_id',$1,true)",[req.auth.org]);const result=await client.query(`UPDATE organizations SET name=$1,timezone=$2,evidence_retention_days=$3,notification_preferences=$4
+      WHERE id=$5 RETURNING name,timezone,evidence_retention_days "evidenceRetentionDays",notification_preferences notifications`,[input.name,input.timezone,input.evidenceRetentionDays,JSON.stringify(input.notifications),req.auth.org]);await audit(req,'organization.settings_updated','organization',req.auth.org,{timezone:input.timezone,evidenceRetentionDays:input.evidenceRetentionDays},client);return result.rows[0]});
+  res.json({settings});
+}));
+
 const caseSchema = z.object({ title: z.string().trim().min(3).max(180), caseType: z.string().trim().min(2).max(80), priority: z.enum(['Critical','High','Medium','Low']), description: z.string().trim().max(4000).default('') });
 app.get('/api/v1/cases', requireAuth, asyncRoute(async (req, res) => {
   const result = await withTenant(req.auth.org, client => client.query('SELECT id,case_number "caseNumber",title,case_type "caseType",priority,status,description,created_at "createdAt" FROM cases WHERE organization_id=$1 ORDER BY created_at DESC LIMIT 200', [req.auth.org]));

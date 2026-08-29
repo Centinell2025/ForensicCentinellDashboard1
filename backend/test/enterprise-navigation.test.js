@@ -45,7 +45,22 @@ test('tenant-scoped dashboard, evidence, and analysis endpoints are declared', (
   assert.match(server, /app\.get\('\/api\/v1\/corporate\/:module', requireAuth/);
   assert.match(server, /app\.post\('\/api\/v1\/corporate\/:module', requireAuth/);
   assert.match(server, /app\.delete\('\/api\/v1\/corporate\/:module\/:id', requireAuth/);
+  assert.match(server, /app\.get\('\/api\/v1\/settings\/organization', requireAuth/);
+  assert.match(server, /app\.put\('\/api\/v1\/settings\/organization', requireAuth/);
   assert.doesNotMatch(server, /encrypted_data_key "encryptedDataKey"/);
+});
+
+test('every rendered HTML button declares an actionable contract', () => {
+  const sources = ['frontend/public/index.html','frontend/public/enterprise-dashboard.js','frontend/public/app.js','frontend/public/ui/runtime-components.js'];
+  const unactionable = [];
+  sources.forEach(file => {
+    const source = fs.readFileSync(path.join(root, file), 'utf8');
+    for (const match of source.matchAll(/<button\b([^>]*)>/g)) {
+      const attributes = match[1];
+      if (!/(?:\bid=|\bdata-[\w-]+|\btype=["']submit["']|download-btn)/.test(attributes)) unactionable.push(`${file}: ${match[0]}`);
+    }
+  });
+  assert.deepEqual(unactionable, []);
 });
 
 test('frontend architecture separates router, store, API, lifecycle, cache, and runtime UI', () => {
