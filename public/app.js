@@ -1,6 +1,7 @@
 /* Copyright © 2026 Beacon of the Eagle LLC. All Rights Reserved. Proprietary software. */
 (function () {
   'use strict';
+  const staticPreview = window.location.hostname.endsWith('github.io');
   const api = async (path, options = {}) => {
     const response = await fetch(path, { credentials: 'same-origin', headers: { 'content-type': 'application/json', ...(options.headers || {}) }, ...options });
     if (response.status === 204) return null;
@@ -27,6 +28,14 @@
     if (userButton) userButton.textContent = `${user.fullName} · ${user.role}`;
     const org = document.getElementById('orgName'); if (org) org.value = user.organization;
   }
+  if (staticPreview) {
+    enter({ fullName: 'Market Preview', role: 'demo', organization: 'Beacon of the Eagle LLC' });
+    const notice = document.createElement('div');
+    notice.className = 'info';
+    notice.style.cssText = 'position:sticky;top:0;z-index:100;text-align:center;border-left:0;border-bottom:1px solid #71e4ff';
+    notice.textContent = 'Secure market preview · Synthetic demonstration data · Live accounts and database run on the Railway deployment';
+    document.body.prepend(notice);
+  }
   form.addEventListener('submit', async event => {
     event.preventDefault();
     const error = document.getElementById('authError'); error.textContent = '';
@@ -34,7 +43,7 @@
     try { const data = await api(`/api/v1/auth/${mode}`, { method:'POST', body:JSON.stringify(body) }); enter(data.user); }
     catch (e) { error.textContent = e.message; }
   });
-  api('/api/v1/auth/me').then(data => enter(data.user)).catch(() => {});
+  if (!staticPreview) api('/api/v1/auth/me').then(data => enter(data.user)).catch(() => {});
 
   const oldInfo = document.querySelector('#ai .info');
   if (oldInfo) oldInfo.textContent = 'Centinell AI is securely connected through the server. Provider credentials are never exposed to the browser or customer.';
