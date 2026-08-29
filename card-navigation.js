@@ -34,7 +34,11 @@
     cue.className = 'analysis-cue';
     cue.textContent = 'Open technical analysis →';
     card.appendChild(cue);
-    function openAnalysis() { window.location.href = analysisUrl(card); }
+    function openAnalysis() {
+      var detail = { card: card, url: analysisUrl(card), module: (card.closest('.page') || {}).id || 'command' };
+      var event = new CustomEvent('centinell:metric-selected', { detail: detail, cancelable: true });
+      if (window.dispatchEvent(event)) window.location.href = detail.url;
+    }
     card.addEventListener('click', openAnalysis);
     card.addEventListener('keydown', function (event) {
       if (event.key === 'Enter' || event.key === ' ') {

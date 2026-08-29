@@ -27,6 +27,7 @@
     const userButton = document.querySelector('.actions .btn');
     if (userButton) userButton.textContent = `${user.fullName} · ${user.role}`;
     const org = document.getElementById('orgName'); if (org) org.value = user.organization;
+    window.dispatchEvent(new CustomEvent('centinell:authenticated', { detail: { user } }));
   }
   if (staticPreview) {
     enter({ fullName: 'Market Preview', role: 'demo', organization: 'Beacon of the Eagle LLC' });

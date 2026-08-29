@@ -103,6 +103,63 @@ app.get('/api/v1/cases', requireAuth, asyncRoute(async (req, res) => {
   const result = await withTenant(req.auth.org, client => client.query('SELECT id,case_number "caseNumber",title,case_type "caseType",priority,status,description,created_at "createdAt" FROM cases WHERE organization_id=$1 ORDER BY created_at DESC LIMIT 200', [req.auth.org]));
   res.json({ cases: result.rows });
 }));
+
+app.get('/api/v1/dashboard/summary', requireAuth, asyncRoute(async (req, res) => {
+  const summary = await withTenant(req.auth.org, async client => {
+    const [cases, evidence, auditEvents, chain] = await Promise.all([
+      client.query(`SELECT
+        count(*) FILTER (WHERE status NOT IN ('Closed','Closing'))::int AS active_cases,
+        count(*) FILTER (WHERE priority='Critical' AND status NOT IN ('Closed','Closing'))::int AS critical_cases,
+        count(*) FILTER (WHERE status='In Review')::int AS cases_in_review,
+        count(*) FILTER (WHERE created_at >= date_trunc('month', now()))::int AS cases_this_month
+        FROM cases WHERE organization_id=$1`, [req.auth.org]),
+      client.query(`SELECT count(*)::int AS evidence_items,
+        count(*) FILTER (WHERE plaintext_sha256 ~ '^[0-9a-f]{64}$')::int AS verified_hashes,
+        coalesce(sum(size_bytes),0)::text AS storage_bytes
+        FROM evidence_objects WHERE organization_id=$1`, [req.auth.org]),
+      client.query(`SELECT count(*) FILTER (WHERE created_at >= now()-interval '24 hours')::int AS audit_events_24h,
+        max(created_at) AS last_audit_at FROM audit_events WHERE organization_id=$1`, [req.auth.org]),
+      client.query('SELECT centinell_verify_audit_chain($1) AS valid', [req.auth.org])
+    ]);
+    return { ...cases.rows[0], ...evidence.rows[0], ...auditEvents.rows[0], audit_chain_valid: chain.rows[0].valid };
+  });
+  res.json({ summary, generatedAt: new Date().toISOString() });
+}));
+
+app.get('/api/v1/evidence', requireAuth, asyncRoute(async (req, res) => {
+  const result = await withTenant(req.auth.org, client => client.query(`
+    SELECT e.id,e.object_key "objectKey",e.plaintext_sha256 "sha256",e.cipher,e.kms_key_id "kmsKeyId",
+      e.size_bytes "sizeBytes",e.created_at "createdAt",c.case_number "caseNumber",c.title "caseTitle"
+    FROM evidence_objects e JOIN cases c ON c.id=e.case_id
+    WHERE e.organization_id=$1 ORDER BY e.created_at DESC LIMIT 200`, [req.auth.org]));
+  res.json({ evidence: result.rows });
+}));
+
+const analysisQuerySchema = z.object({
+  module: z.string().trim().regex(/^[a-z-]{2,40}$/).default('command'),
+  metric: z.string().trim().min(2).max(100).default('security-metric')
+});
+app.get('/api/v1/analysis', requireAuth, asyncRoute(async (req, res) => {
+  const input = analysisQuerySchema.parse(req.query);
+  const analysis = await withTenant(req.auth.org, async client => {
+    const [cases, evidence, events, chain] = await Promise.all([
+      client.query(`SELECT id,case_number "caseNumber",title,case_type "caseType",priority,status,
+        created_at "createdAt",updated_at "updatedAt" FROM cases WHERE organization_id=$1
+        ORDER BY updated_at DESC LIMIT 12`, [req.auth.org]),
+      client.query(`SELECT e.id,e.object_key "objectKey",e.plaintext_sha256 "sha256",e.cipher,
+        e.size_bytes "sizeBytes",e.created_at "createdAt",c.case_number "caseNumber"
+        FROM evidence_objects e JOIN cases c ON c.id=e.case_id
+        WHERE e.organization_id=$1 ORDER BY e.created_at DESC LIMIT 12`, [req.auth.org]),
+      client.query(`SELECT id,action,entity_type "entityType",entity_id "entityId",metadata,
+        event_hash "eventHash",previous_hash "previousHash",created_at "createdAt"
+        FROM audit_events WHERE organization_id=$1 ORDER BY created_at DESC LIMIT 20`, [req.auth.org]),
+      client.query('SELECT centinell_verify_audit_chain($1) AS valid', [req.auth.org])
+    ]);
+    return { module: input.module, metric: input.metric, cases: cases.rows, evidence: evidence.rows,
+      auditEvents: events.rows, auditChainValid: chain.rows[0].valid };
+  });
+  res.json({ analysis, generatedAt: new Date().toISOString(), tenant: req.auth.org });
+}));
 app.post('/api/v1/cases', requireAuth, allow('admin','analyst'), asyncRoute(async (req, res) => {
   const input = caseSchema.parse(req.body);
   const created = await transaction(async client => {
