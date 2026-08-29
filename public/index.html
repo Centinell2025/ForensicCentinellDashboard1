@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><meta name="copyright" content="Copyright © 2026 Beacon of the Eagle LLC. All Rights Reserved."><title>Centinell Forensics Enterprise | DFIR &amp; Cybersecurity</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"><link rel="stylesheet" href="/enterprise.css">
+<style>
+:root{--bg:#06162d;--nav:#071a35;--panel:#0c2b54;--panel2:#103865;--line:#22517f;--txt:#eef7ff;--muted:#9bb8d7;--blue:#2da9ff;--cyan:#71e4ff;--good:#40d69a;--warn:#ffc15a;--bad:#ff6980;--shadow:0 15px 40px #0005}*{box-sizing:border-box}body{margin:0;background:linear-gradient(130deg,#05152c,#0d3b72);font:14px Inter,system-ui,sans-serif;color:var(--txt);min-height:100vh}button,input,select,textarea{font:inherit}button{cursor:pointer}.app{display:grid;grid-template-columns:266px 1fr;min-height:100vh}.side{background:#04142bd9;border-right:1px solid var(--line);padding:18px 12px;position:sticky;top:0;height:100vh;overflow:auto}.brand{display:flex;align-items:center;gap:11px;padding:4px 8px 19px}.mark{width:40px;height:40px;border-radius:13px;display:grid;place-items:center;background:#0d4179;border:1px solid var(--cyan);color:var(--cyan);font-size:20px;font-weight:900}.brand b{display:block}.brand small{color:var(--muted);font-size:10px;letter-spacing:1px}.label{font-size:10px;text-transform:uppercase;letter-spacing:1.3px;color:#7a9dc5;padding:12px 10px 6px}.nav{display:grid;gap:3px}.nav button{border:0;background:transparent;color:#b8cbe1;text-align:left;padding:10px;border-radius:9px}.nav button:hover,.nav button.active{background:linear-gradient(90deg,#1877bc66,transparent);color:#fff}.nav button.active{border-left:3px solid var(--cyan);padding-left:7px}.health{margin-top:17px;border:1px solid var(--line);border-radius:12px;padding:12px;background:#10336188;font-size:12px}.health p{color:var(--muted);line-height:1.5}.main{padding:23px;overflow:hidden}.top{display:flex;gap:12px;justify-content:space-between;align-items:center;margin-bottom:22px}.search{display:flex;gap:8px;align-items:center;width:min(510px,100%);padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:#09254ac9}.search input{width:100%;border:0;background:transparent;outline:0;color:white}.actions{display:flex;gap:9px;align-items:center}.btn{border:1px solid var(--line);background:#11355f;color:white;border-radius:9px;padding:9px 11px}.primary{background:linear-gradient(135deg,#188be3,#51cafb);border:0;color:#001c38;font-weight:800}.page{display:none}.page.active{display:block}.heading{display:flex;justify-content:space-between;align-items:end;gap:15px;margin-bottom:18px}.heading h1{margin:0;font-size:27px}.heading p{color:var(--muted);margin:5px 0 0}.chip{display:inline-block;border-radius:999px;padding:4px 8px;font-size:11px;font-weight:700}.good{background:#40d69a22;color:#88ecc1}.warning{background:#ffc15a22;color:#ffd28b}.critical{background:#ff698022;color:#ff9eae}.medium{background:#2da9ff22;color:#93d8ff}.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:13px}.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:13px}.card,.panel{background:linear-gradient(145deg,#103a6bdc,#08264bcc);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow)}.card{padding:15px}.metric{font-size:28px;font-weight:800;margin:8px 0}.muted,.sub{color:var(--muted);font-size:12px}.split{display:grid;grid-template-columns:1.35fr .9fr;gap:13px;margin-top:13px}.panel{padding:16px}.panel h2{font-size:16px;margin:0}.head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}.chart{height:190px;display:flex;align-items:end;gap:10px;background:repeating-linear-gradient(to top,transparent 0,transparent 37px,#75b7ed12 38px);border-bottom:1px solid var(--line);padding:8px}.bar{flex:1;background:linear-gradient(to top,#1775c6,#64d4ff);border-radius:6px 6px 2px 2px;min-height:12px}.activity{display:grid;gap:11px}.item{display:grid;grid-template-columns:9px 1fr auto;gap:9px}.dot{width:8px;height:8px;background:var(--cyan);border-radius:50%;margin-top:5px}.item b{font-size:12px}.item p{margin:3px 0;color:var(--muted);font-size:11px}.tablewrap{overflow:auto}.table{width:100%;border-collapse:collapse;min-width:720px}.table th{text-align:left;font-size:10px;letter-spacing:.7px;text-transform:uppercase;color:#87a8ca;padding:11px;border-bottom:1px solid var(--line)}.table td{padding:12px 11px;border-bottom:1px solid #29537b99;font-size:12px}.table tr:hover{background:#36aaff0b}.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:13px}.toolbar input,.toolbar select{padding:9px;border-radius:8px;border:1px solid var(--line);background:#09294f;color:white;outline:0}.page-grid{display:grid;grid-template-columns:1fr 320px;gap:13px}.timeline{padding:4px}.event{border-left:1px solid var(--line);padding:0 0 18px 23px;position:relative}.event:before{content:'';position:absolute;width:8px;height:8px;border-radius:50%;background:var(--cyan);left:-5px;top:2px}.event p{margin:4px 0;color:var(--muted);font-size:12px}.ai-messages{height:390px;overflow:auto;display:flex;flex-direction:column;gap:10px}.msg{max-width:82%;padding:11px;border-radius:12px;font-size:13px;line-height:1.4}.bot{background:#113e73;border:1px solid #2a619b}.user{align-self:end;background:#207fbd}.composer{display:flex;gap:8px;margin-top:12px}.composer input{flex:1;background:#09294f;border:1px solid var(--line);border-radius:9px;color:white;padding:11px;outline:0}.info{border-left:3px solid var(--cyan);padding:10px;background:#2da9ff12;border-radius:0 8px 8px 0;color:#d9edff;font-size:12px;margin-bottom:10px}.modal{display:none;position:fixed;inset:0;background:#010917bb;place-items:center;z-index:5}.modal.show{display:grid}.box{background:#0d315d;border:1px solid #3572a9;border-radius:15px;padding:19px;width:min(500px,92vw)}.form{display:grid;gap:10px}.form input,.form select,.form textarea{padding:10px;border-radius:8px;background:#09264a;border:1px solid var(--line);color:#fff}.formactions{display:flex;justify-content:end;gap:8px}.toast{display:none;position:fixed;right:20px;bottom:20px;background:#124373;border:1px solid #4ca8e9;border-radius:9px;padding:12px;z-index:8}.toast.show{display:block}@media(max-width:1100px){.app{grid-template-columns:75px 1fr}.brand div:not(.mark),.label,.nav span,.health{display:none}.nav button{text-align:center}.grid4,.cards{grid-template-columns:repeat(2,1fr)}.page-grid,.split{grid-template-columns:1fr}}@media(max-width:650px){.app{display:block}.side{position:relative;height:auto;display:flex;gap:4px;overflow:auto}.brand{padding:0}.nav{display:flex}.nav button{white-space:nowrap}.main{padding:15px}.top,.heading{align-items:stretch;flex-direction:column}.grid4,.cards{grid-template-columns:1fr}}
+</style>
+<style>
+/* --- Extensions: added for full navigability, forms, AI chat, and a11y --- */
+:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
+a{color:var(--cyan)}
+.high{background:#ff8a4422;color:#ffb98c}
+.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+.hash{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;color:var(--cyan);word-break:break-all}
+.progress{height:8px;background:#0a2a4f;border-radius:999px;overflow:hidden}
+.progress-fill{height:100%;background:linear-gradient(90deg,#1775c6,#64d4ff);border-radius:999px}
+.switch{position:relative;display:inline-block;width:38px;height:22px;flex:none}
+.switch input{opacity:0;width:0;height:0;position:absolute}
+.slider{position:absolute;inset:0;background:#1b3f6b;border-radius:999px;cursor:pointer;transition:background .15s}
+.slider:before{content:'';position:absolute;width:16px;height:16px;left:3px;top:3px;background:#dce9fb;border-radius:50%;transition:transform .15s}
+.switch input:checked+.slider{background:linear-gradient(135deg,#188be3,#51cafb)}
+.switch input:checked+.slider:before{transform:translateX(16px);background:#04162e}
+.settings-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid #1c3f66}
+.settings-row:last-child{border-bottom:0}
+.settings-row b{font-size:13px;display:block}
+.field{display:grid;gap:5px}
+.field label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.toast{border-left:3px solid var(--cyan);max-width:340px}
+.toast.success{border-left-color:var(--good)}
+.toast.error{border-left-color:var(--bad)}
+.toast b{display:block;margin-bottom:2px;font-size:12px}
+.toast p{margin:0;color:var(--muted);font-size:12px}
+.suggest{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:12px}
+.suggest button{border:1px solid var(--line);background:#0e3562;color:#cfe6ff;border-radius:999px;padding:7px 12px;font-size:12px}
+.suggest button:hover{background:#134680;color:#fff}
+.keybtn{background:none;border:0;color:var(--muted);padding:4px}
+.keybtn:hover{color:#fff}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:#1c3f66;border-radius:999px}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body><div class="app"><aside class="side"><div class="brand"><div class="mark">C</div><div><b>Centinell</b><small>DFIR · CYBERSECURITY</small></div></div><div class="label">Operations</div><nav class="nav"><button class="active" data-page="command"><span>◈ Command Center</span></button><button data-page="cases"><span>▣ Case Management</span></button><button data-page="soc"><span>⚠ SOC Operations</span></button><button data-page="evidence"><span>◉ Evidence Vault</span></button><button data-page="custody"><span>⌘ Chain of Custody</span></button><button data-page="endpoint"><span>◌ Endpoint Forensics</span></button><button data-page="network"><span>⌁ Network Forensics</span></button></nav><div class="label">Security Intelligence</div><nav class="nav"><button data-page="assets"><span>◆ Asset Intelligence</span></button><button data-page="vulns"><span>◫ Vulnerabilities</span></button><button data-page="siem"><span>⌕ SIEM Explorer</span></button><button data-page="identity"><span>◎ Identity Security</span></button><button data-page="cloud"><span>☁ Email &amp; Cloud</span></button><button data-page="intel"><span>✧ Threat Intelligence</span></button></nav><div class="label">Governance</div><nav class="nav"><button data-page="risk"><span>◐ Risk &amp; Compliance</span></button><button data-page="reports"><span>▤ Reports</span></button><button data-page="ai"><span>✦ Centinell AI</span></button><button data-page="settings"><span>⚙ Settings</span></button></nav><div class="health"><b>● Platform healthy</b><p>Audit logging enabled<br>Evidence integrity monitoring: active</p><span class="chip good">99.98% availability</span></div></aside><main class="main"><header class="top"><div class="search">⌕ <input placeholder="Search assets, alerts, evidence, hashes, users, IPs..." id="search"/></div><div class="actions"><select id="lang" class="btn"><option value="en">English</option><option value="es">Español</option></select><button class="btn" id="notifBtn">◔ 6</button><button class="btn primary" id="caseBtn">＋ New Case</button></div></header>
+<section class="page active" id="command"><div class="heading"><div><h1>Command Center</h1><p>Enterprise DFIR, cyber defense, incident response, and IT security operations.</p></div><span class="chip good">● Secure Operations</span></div><div class="grid4"><div class="card"><div class="sub">Active Cases</div><div class="metric">24</div><span class="good">↑ 12% this month</span></div><div class="card"><div class="sub">Critical Alerts</div><div class="metric">6</div><span class="critical">Requires attention</span></div><div class="card"><div class="sub">Assets at Risk</div><div class="metric">17</div><span class="warning">4 internet-exposed</span></div><div class="card"><div class="sub">Evidence Integrity</div><div class="metric">100%</div><span class="good">✓ Verified hashes</span></div></div><div class="split"><div class="panel"><div class="head"><h2>Security Operations Volume</h2><span class="muted">Last 7 days</span></div><div class="chart"><i class="bar" style="height:38%"></i><i class="bar" style="height:62%"></i><i class="bar" style="height:49%"></i><i class="bar" style="height:81%"></i><i class="bar" style="height:70%"></i><i class="bar" style="height:89%"></i><i class="bar" style="height:56%"></i></div></div><div class="panel"><div class="head"><h2>Priority Activity</h2><button class="btn" data-go="soc">View SOC</button></div><div class="activity"><div class="item"><i class="dot"></i><div><b>Privilege escalation detected</b><p>WS-FIN-07 · Correlated with ALT-7781.</p></div><span class="muted">4m</span></div><div class="item"><i class="dot"></i><div><b>Suspicious outbound beacon traffic blocked</b><p>GW-EDGE-02 · Matched known C2 infrastructure indicator.</p></div><span class="muted">19m</span></div><div class="item"><i class="dot"></i><div><b>New critical vulnerability on exposed asset</b><p>API-GW-14 · CVE-2026-31842 (CVSS 9.8), patch pending.</p></div><span class="muted">41m</span></div><div class="item"><i class="dot"></i><div><b>Chain of custody event recorded</b><p>CASE-2031 · Evidence WS-FIN-07.E01 checked out for analysis.</p></div><span class="muted">1h</span></div><div class="item"><i class="dot"></i><div><b>MFA bypass attempt flagged</b><p>jalvarez@bankcorp-client.com · 5 failed challenges from a new device.</p></div><span class="muted">2h</span></div></div></div></div><div class="page-grid" style="margin-top:13px"><div class="panel"><div class="head"><h2>Open Cases Snapshot</h2><button class="btn" data-go="cases">View all cases</button></div><div class="tablewrap"><table class="table"><thead><tr><th>Case</th><th>Type</th><th>Priority</th><th>Status</th></tr></thead><tbody><tr><td><b>CASE-2031</b><br><span class="muted">Financial Systems Breach</span></td><td>Incident Response</td><td><span class="chip critical">Critical</span></td><td><span class="chip medium">Active</span></td></tr><tr><td><b>CASE-2028</b><br><span class="muted">Insider Data Exfiltration</span></td><td>Digital Forensics</td><td><span class="chip high">High</span></td><td><span class="chip medium">Active</span></td></tr><tr><td><b>CASE-2024</b><br><span class="muted">Ransomware - Regional Office</span></td><td>Malware Analysis</td><td><span class="chip critical">Critical</span></td><td><span class="chip warning">In Review</span></td></tr><tr><td><b>CASE-2019</b><br><span class="muted">Vendor Email Compromise</span></td><td>Incident Response</td><td><span class="chip high">High</span></td><td><span class="chip good">Closing</span></td></tr></tbody></table></div></div><div class="panel"><div class="head"><h2>Compliance Posture</h2><button class="btn" data-go="risk">Details</button></div><div style="display:grid;gap:13px"><div><div class="head" style="margin-bottom:6px"><span style="font-size:12px">ISO/IEC 27001</span><span class="muted">92%</span></div><div class="progress"><div class="progress-fill" style="width:92%"></div></div></div><div><div class="head" style="margin-bottom:6px"><span style="font-size:12px">SOC 2 Type II</span><span class="muted">87%</span></div><div class="progress"><div class="progress-fill" style="width:87%"></div></div></div><div><div class="head" style="margin-bottom:6px"><span style="font-size:12px">NIST CSF 2.0</span><span class="muted">78%</span></div><div class="progress"><div class="progress-fill" style="width:78%"></div></div></div><div><div class="head" style="margin-bottom:6px"><span style="font-size:12px">PCI DSS 4.0</span><span class="muted">95%</span></div><div class="progress"><div class="progress-fill" style="width:95%"></div></div></div></div></div></div></section>
+<section class="page" id="cases"><div class="heading"><div><h1>Case Management</h1><p>Track, assign, and manage active digital forensics and incident response investigations.</p></div><span class="chip medium">24 Active</span></div><div class="grid4"><div class="card"><div class="sub">Open Cases</div><div class="metric">24</div><span class="muted">6 opened this week</span></div><div class="card"><div class="sub">In Review</div><div class="metric">5</div><span class="warning">Awaiting sign-off</span></div><div class="card"><div class="sub">Closed This Month</div><div class="metric">11</div><span class="good">↑ 8% vs last month</span></div><div class="card"><div class="sub">Avg. Time to Resolution</div><div class="metric">6.4d</div><span class="good">↓ 1.1 days</span></div></div><div class="panel" style="margin-top:13px"><div class="toolbar"><input id="casesSearch" placeholder="Search cases by ID, title, investigator..." style="flex:1;min-width:220px"/><select id="casesPriority"><option value="">All Priorities</option><option>Critical</option><option>High</option><option>Medium</option><option>Low</option></select><select id="casesStatus"><option value="">All Statuses</option><option>Active</option><option>In Review</option><option>Closing</option><option>Closed</option></select><select id="casesType"><option value="">All Types</option><option>Digital Forensics</option><option>Incident Response</option><option>Malware Analysis</option><option>Data Breach</option><option>Insider Threat</option><option>eDiscovery</option></select></div><div class="tablewrap"><table class="table" id="casesTable"><thead><tr><th>Case ID</th><th>Title</th><th>Type</th><th>Priority</th><th>Investigator</th><th>Status</th><th>Opened</th><th>Last Activity</th></tr></thead><tbody>
+<tr><td class="mono">CASE-2031</td><td>Financial Systems Breach</td><td>Incident Response</td><td><span class="chip critical">Critical</span></td><td>J. Alvarez</td><td><span class="chip medium">Active</span></td><td>Aug 14, 2026</td><td>12m ago</td></tr>
+<tr><td class="mono">CASE-2030</td><td>Cloud Storage Misconfiguration Review</td><td>Digital Forensics</td><td><span class="chip warning">Medium</span></td><td>S. Whitfield</td><td><span class="chip medium">Active</span></td><td>Aug 13, 2026</td><td>2h ago</td></tr>
+<tr><td class="mono">CASE-2029</td><td>Phishing Campaign - Executive Targets</td><td>Incident Response</td><td><span class="chip high">High</span></td><td>M. Chen</td><td><span class="chip medium">Active</span></td><td>Aug 12, 2026</td><td>5h ago</td></tr>
+<tr><td class="mono">CASE-2028</td><td>Insider Data Exfiltration</td><td>Digital Forensics</td><td><span class="chip high">High</span></td><td>M. Chen</td><td><span class="chip medium">Active</span></td><td>Aug 10, 2026</td><td>1d ago</td></tr>
+<tr><td class="mono">CASE-2027</td><td>Mobile Device Extraction - HR Dispute</td><td>eDiscovery</td><td><span class="chip good">Low</span></td><td>S. Whitfield</td><td><span class="chip warning">In Review</span></td><td>Aug 8, 2026</td><td>2d ago</td></tr>
+<tr><td class="mono">CASE-2026</td><td>Third-Party Vendor Breach Notification</td><td>Data Breach</td><td><span class="chip high">High</span></td><td>J. Alvarez</td><td><span class="chip warning">In Review</span></td><td>Aug 6, 2026</td><td>3d ago</td></tr>
+<tr><td class="mono">CASE-2024</td><td>Ransomware - Regional Office</td><td>Malware Analysis</td><td><span class="chip critical">Critical</span></td><td>R. Okafor</td><td><span class="chip warning">In Review</span></td><td>Jul 29, 2026</td><td>4d ago</td></tr>
+<tr><td class="mono">CASE-2019</td><td>Vendor Email Compromise</td><td>Incident Response</td><td><span class="chip high">High</span></td><td>M. Chen</td><td><span class="chip good">Closing</span></td><td>Jul 18, 2026</td><td>6d ago</td></tr>
+<tr><td class="mono">CASE-2011</td><td>Employee Policy Violation - Data Handling</td><td>Insider Threat</td><td><span class="chip warning">Medium</span></td><td>S. Whitfield</td><td><span class="chip good">Closed</span></td><td>Jun 30, 2026</td><td>3w ago</td></tr>
+</tbody></table></div><p class="muted" style="margin-top:10px">Showing 9 of 24 cases.</p></div></section>
+<section class="page" id="soc"><div class="heading"><div><h1>SOC Operations</h1><p>Real-time monitoring, alert triage, and analyst workflow for the security operations center.</p></div><span class="chip good">● Live Monitoring</span></div><div class="grid4"><div class="card"><div class="sub">Alerts Today</div><div class="metric">142</div><span class="muted">38 auto-resolved</span></div><div class="card"><div class="sub">Mean Time to Detect</div><div class="metric">4.2m</div><span class="good">↓ 0.8 min</span></div><div class="card"><div class="sub">Mean Time to Respond</div><div class="metric">17m</div><span class="good">↓ 3 min</span></div><div class="card"><div class="sub">Analysts on Shift</div><div class="metric">6</div><span class="muted">Tier 1-3 coverage</span></div></div><div class="split"><div class="panel"><div class="head"><h2>Alert Volume by Severity</h2><span class="muted">Last 7 days</span></div><div class="chart"><i class="bar" style="height:44%"></i><i class="bar" style="height:58%"></i><i class="bar" style="height:33%"></i><i class="bar" style="height:71%"></i><i class="bar" style="height:66%"></i><i class="bar" style="height:92%"></i><i class="bar" style="height:61%"></i></div></div><div class="panel"><div class="head"><h2>Live Alert Feed</h2><span class="chip critical">6 critical</span></div><div class="activity"><div class="item"><i class="dot"></i><div><b>Malware signature match</b><p>EP-3391 · Trojan.GenKryptik variant quarantined automatically.</p></div><span class="muted">2m</span></div><div class="item"><i class="dot"></i><div><b>Impossible travel login</b><p>Account jalvarez@bankcorp-client.com · Lagos → Warsaw in 11 min.</p></div><span class="muted">8m</span></div><div class="item"><i class="dot"></i><div><b>Firewall policy violation</b><p>Outbound 4444/tcp blocked from finance VLAN.</p></div><span class="muted">14m</span></div><div class="item"><i class="dot"></i><div><b>Brute-force attempt</b><p>SSH bastion host · 340 attempts from a single source IP.</p></div><span class="muted">26m</span></div><div class="item"><i class="dot"></i><div><b>Data loss prevention flag</b><p>Large export to personal cloud storage account.</p></div><span class="muted">52m</span></div></div></div></div><div class="panel" style="margin-top:13px"><div class="toolbar"><input id="socSearch" placeholder="Search alerts by ID, asset, account..." style="flex:1;min-width:220px"/><select id="socSeverity"><option value="">All Severities</option><option>Critical</option><option>High</option><option>Medium</option><option>Low</option></select><select id="socStatus"><option value="">All Statuses</option><option>Investigating</option><option>Contained</option><option>Resolved</option><option>Closed</option></select></div><div class="tablewrap"><table class="table" id="socTable"><thead><tr><th>Alert ID</th><th>Source</th><th>Severity</th><th>Asset / Account</th><th>Status</th><th>Assigned</th><th>Time</th></tr></thead><tbody>
+<tr><td class="mono">ALT-7781</td><td>EDR Sensor</td><td><span class="chip critical">Critical</span></td><td>WS-FIN-07</td><td><span class="chip medium">Investigating</span></td><td>J. Alvarez</td><td>4m</td></tr>
+<tr><td class="mono">ALT-7780</td><td>Network IDS</td><td><span class="chip high">High</span></td><td>GW-EDGE-02</td><td><span class="chip warning">Contained</span></td><td>M. Chen</td><td>19m</td></tr>
+<tr><td class="mono">ALT-7778</td><td>SIEM Correlation</td><td><span class="chip critical">Critical</span></td><td>API-GW-14</td><td><span class="chip medium">Investigating</span></td><td>R. Okafor</td><td>41m</td></tr>
+<tr><td class="mono">ALT-7775</td><td>Identity Provider</td><td><span class="chip high">High</span></td><td>jalvarez@bankcorp-client.com</td><td><span class="chip medium">Investigating</span></td><td>S. Whitfield</td><td>1h</td></tr>
+<tr><td class="mono">ALT-7770</td><td>Email Gateway</td><td><span class="chip warning">Medium</span></td><td>finance-dl@client.com</td><td><span class="chip good">Resolved</span></td><td>Auto-Remediated</td><td>3h</td></tr>
+<tr><td class="mono">ALT-7768</td><td>EDR Sensor</td><td><span class="chip warning">Medium</span></td><td>EP-3391</td><td><span class="chip good">Resolved</span></td><td>Auto-Remediated</td><td>3h</td></tr>
+<tr><td class="mono">ALT-7761</td><td>Cloud Security (CSPM)</td><td><span class="chip high">High</span></td><td>S3: client-backups-prod</td><td><span class="chip medium">Investigating</span></td><td>M. Chen</td><td>6h</td></tr>
+<tr><td class="mono">ALT-7754</td><td>DLP</td><td><span class="chip good">Low</span></td><td>WS-HR-22</td><td><span class="chip good">Closed</span></td><td>S. Whitfield</td><td>9h</td></tr>
+</tbody></table></div></div></section>
+<section class="page" id="evidence"><div class="heading"><div><h1>Evidence Vault</h1><p>Hash-verified digital evidence storage with full acquisition metadata.</p></div><span class="chip good">Hash-Verified</span></div><div class="grid4"><div class="card"><div class="sub">Total Evidence Items</div><div class="metric">312</div><span class="muted">Across 24 cases</span></div><div class="card"><div class="sub">Verified Hashes</div><div class="metric">309</div><span class="good">100% of intake</span></div><div class="card"><div class="sub">Pending Intake</div><div class="metric">3</div><span class="warning">Awaiting hash</span></div><div class="card"><div class="sub">Storage Used</div><div class="metric">8.4TB</div><span class="muted">of 20TB allocated</span></div></div><div class="panel" style="margin-top:13px"><div class="toolbar"><input id="evidenceSearch" placeholder="Search evidence by ID, case, hash..." style="flex:1;min-width:220px"/><select id="evidenceCase"><option value="">All Cases</option><option>CASE-2031</option><option>CASE-2030</option><option>CASE-2029</option><option>CASE-2028</option><option>CASE-2024</option><option>CASE-2019</option></select><select id="evidenceType"><option value="">All Types</option><option>Disk Image</option><option>Memory Dump</option><option>Log Bundle</option><option>Mobile Extraction</option><option>Network Capture</option><option>Cloud Export</option></select></div><div class="tablewrap"><table class="table" id="evidenceTable"><thead><tr><th>Evidence ID</th><th>Case</th><th>Type</th><th>SHA-256</th><th>Collected By</th><th>Date</th><th>Integrity</th></tr></thead><tbody>
+<tr><td class="mono">EVD-4471</td><td class="mono">CASE-2031</td><td>Disk Image (E01)</td><td class="hash" title="5b7511ca6009bb578c45e1c2038cee09375180fb2df021ad776f34349100580b">5b7511ca6009…0580b</td><td>J. Alvarez</td><td>Aug 14, 2026</td><td><span class="chip good">Verified</span></td></tr>
+<tr><td class="mono">EVD-4472</td><td class="mono">CASE-2031</td><td>Memory Dump (RAW)</td><td class="hash" title="e5fecfa972f69a3f379fa345d79bcb6f93d7f65b65b062ccf5f394e7569d8ec8">e5fecfa972f6…d8ec8</td><td>M. Chen</td><td>Aug 15, 2026</td><td><span class="chip good">Verified</span></td></tr>
+<tr><td class="mono">EVD-4465</td><td class="mono">CASE-2028</td><td>Log Bundle (Syslog/EDR)</td><td class="hash" title="4348ad7a1de7079d9ab8d80d99c41607b44e07e92bf338837f7da6f9f69f726a">4348ad7a1de7…f726a</td><td>M. Chen</td><td>Aug 10, 2026</td><td><span class="chip good">Verified</span></td></tr>
+<tr><td class="mono">EVD-4458</td><td class="mono">CASE-2024</td><td>Disk Image (E01)</td><td class="hash" title="468a74608e6fb0006a5dae7bc41a60369a2e75abafeaa12e621fb80a4bf4f284">468a74608e6f…f4284</td><td>R. Okafor</td><td>Jul 29, 2026</td><td><span class="chip good">Verified</span></td></tr>
+<tr><td class="mono">EVD-4459</td><td class="mono">CASE-2024</td><td>Network Capture (PCAP)</td><td class="hash" title="37bc7664e9576a0ee35216bb2a246d59b738ac29607cda95c4a584cafff413d2">37bc7664e957…413d2</td><td>R. Okafor</td><td>Jul 29, 2026</td><td><span class="chip good">Verified</span></td></tr>
+<tr><td class="mono">EVD-4441</td><td class="mono">CASE-2030</td><td>Cloud Export (S3 Access Logs)</td><td class="hash" title="ff52a7d13a8f1f42870cc38ff86b42c2e3f2bdaca9b95337c3e7080fe7e2c713">ff52a7d13a8f…2c713</td><td>S. Whitfield</td><td>Aug 13, 2026</td><td><span class="chip good">Verified</span></td></tr>
+<tr><td class="mono">EVD-4438</td><td class="mono">CASE-2029</td><td>Mobile Extraction (UFED)</td><td class="hash">— pending —</td><td>S. Whitfield</td><td>Aug 12, 2026</td><td><span class="chip warning">Pending</span></td></tr>
+<tr><td class="mono">EVD-4402</td><td class="mono">CASE-2019</td><td>Log Bundle (O365 Audit)</td><td class="hash" title="dfb16bc0a93f2f0c1f9ae57c52d8bf1c19a8541902624048d66932827be69002">dfb16bc0a93f…69002</td><td>M. Chen</td><td>Jul 18, 2026</td><td><span class="chip good">Verified</span></td></tr>
+</tbody></table></div><p class="muted" style="margin-top:10px">Showing 8 of 312 items. Every acquisition is hashed at intake and re-verified on access.</p></div></section>
+<section class="page" id="custody"><div class="heading"><div><h1>Chain of Custody</h1><p>Cryptographically hash-chained custody ledger for evidence integrity and legal admissibility.</p></div><span class="chip good">Hash-Chained Ledger</span></div><div class="info">Each custody event is sealed into a SHA-256 hash that incorporates the hash of the event before it. Changing or reordering any past event breaks every hash after it, so tampering is mathematically detectable rather than merely logged.</div><div class="panel"><div class="head"><h2>Custody Ledger</h2><div style="display:flex;gap:8px;align-items:center"><select id="custodyCase"><option>CASE-2031 — Financial Systems Breach</option><option>CASE-2028 — Insider Data Exfiltration</option><option>CASE-2024 — Ransomware - Regional Office</option></select><button class="btn primary" id="verifyChainBtn">✓ Verify Chain Integrity</button></div></div><div class="timeline" id="custodyTimeline">
+<div class="event" data-idx="0" id="custEvt0"><b>Evidence collected: Disk image WS-FIN-07.E01 (500GB, write-blocked acquisition)</b><p>J. Alvarez - Lead Forensic Examiner · Aug 14, 09:12 UTC</p><p>Prev: <span class="hash">GENESIS</span></p><p>Hash: <span class="hash" data-hash="5b7511ca6009bb578c45e1c2038cee09375180fb2df021ad776f34349100580b">5b7511ca6009bb578c45e1c2038cee09375180fb2df021ad776f34349100580b</span> <span id="custStatus0"></span></p></div>
+<div class="event" data-idx="1" id="custEvt1"><b>Evidence logged into vault - Rack 3, Bay 12, Shelf B</b><p>Automated Custody System · Aug 14, 09:47 UTC</p><p>Prev: <span class="hash">5b7511ca6009bb578c45e1c2038cee09375180fb2df021ad776f34349100580b</span></p><p>Hash: <span class="hash" data-hash="cc7699c4ecbc9b93952ed68444e1379df6451cac59107a0c0e7815a5dca71cce">cc7699c4ecbc9b93952ed68444e1379df6451cac59107a0c0e7815a5dca71cce</span> <span id="custStatus1"></span></p></div>
+<div class="event" data-idx="2" id="custEvt2"><b>Initial SHA-256 integrity hash computed and sealed</b><p>Automated Custody System · Aug 14, 09:48 UTC</p><p>Prev: <span class="hash">cc7699c4ecbc9b93952ed68444e1379df6451cac59107a0c0e7815a5dca71cce</span></p><p>Hash: <span class="hash" data-hash="b2939e6ab499cd9062c9783c98625edcc37eeadd8e3718af3aa6b7e7aa4fb0b6">b2939e6ab499cd9062c9783c98625edcc37eeadd8e3718af3aa6b7e7aa4fb0b6</span> <span id="custStatus2"></span></p></div>
+<div class="event" data-idx="3" id="custEvt3"><b>Evidence checked out for forensic analysis</b><p>M. Chen - Forensic Analyst · Aug 15, 13:20 UTC</p><p>Prev: <span class="hash">b2939e6ab499cd9062c9783c98625edcc37eeadd8e3718af3aa6b7e7aa4fb0b6</span></p><p>Hash: <span class="hash" data-hash="de4cf761da890b15905274c21def3ddd66d01b61b9ccb47082a556ca717539e1">de4cf761da890b15905274c21def3ddd66d01b61b9ccb47082a556ca717539e1</span> <span id="custStatus3"></span></p></div>
+<div class="event" data-idx="4" id="custEvt4"><b>Memory artifact extraction completed, 14 IOCs identified</b><p>M. Chen - Forensic Analyst · Aug 16, 17:05 UTC</p><p>Prev: <span class="hash">de4cf761da890b15905274c21def3ddd66d01b61b9ccb47082a556ca717539e1</span></p><p>Hash: <span class="hash" data-hash="c9fc2a83cba3ca35b77482dc2a908996117b75f933a02a4a75f319334b3d9930">c9fc2a83cba3ca35b77482dc2a908996117b75f933a02a4a75f319334b3d9930</span> <span id="custStatus4"></span></p></div>
+<div class="event" data-idx="5" id="custEvt5"><b>Evidence returned to vault, integrity re-verified</b><p>M. Chen - Forensic Analyst · Aug 16, 18:30 UTC</p><p>Prev: <span class="hash">c9fc2a83cba3ca35b77482dc2a908996117b75f933a02a4a75f319334b3d9930</span></p><p>Hash: <span class="hash" data-hash="03ccd736e6919f3eda89813eabec2f32acf57ece613594e151582ec2b130d7aa">03ccd736e6919f3eda89813eabec2f32acf57ece613594e151582ec2b130d7aa</span> <span id="custStatus5"></span></p></div>
+<div class="event" data-idx="6" id="custEvt6"><b>Access granted for legal review</b><p>R. Okafor - Legal Counsel · Aug 18, 10:00 UTC</p><p>Prev: <span class="hash">03ccd736e6919f3eda89813eabec2f32acf57ece613594e151582ec2b130d7aa</span></p><p>Hash: <span class="hash" data-hash="d97f45ce0c66450baedc7f0daa4591c24bd78c0ef4f0fbeb21a729efbadb8658">d97f45ce0c66450baedc7f0daa4591c24bd78c0ef4f0fbeb21a729efbadb8658</span> <span id="custStatus6"></span></p></div>
+<div class="event" data-idx="7" id="custEvt7"><b>Chain of custody report generated for court submission</b><p>Centinell Reporting Engine · Aug 19, 08:15 UTC</p><p>Prev: <span class="hash">d97f45ce0c66450baedc7f0daa4591c24bd78c0ef4f0fbeb21a729efbadb8658</span></p><p>Hash: <span class="hash" data-hash="2e19418946fecc18cf79b03786b7e18816bb693e00c5e0e820bc290588084b0b">2e19418946fecc18cf79b03786b7e18816bb693e00c5e0e820bc290588084b0b</span> <span id="custStatus7"></span></p></div>
+</div></div></section>
+<section class="page" id="endpoint"><div class="heading"><div><h1>Endpoint Forensics</h1><p>Host-level artifact collection, triage, and deep-dive analysis across managed endpoints.</p></div><span class="chip medium">486 Endpoints</span></div><div class="grid4"><div class="card"><div class="sub">Endpoints Monitored</div><div class="metric">486</div><span class="muted">98.4% agent coverage</span></div><div class="card"><div class="sub">Confirmed Compromised</div><div class="metric">3</div><span class="critical">Active response</span></div><div class="card"><div class="sub">Under Investigation</div><div class="metric">9</div><span class="warning">Triage in progress</span></div><div class="card"><div class="sub">Clean / Verified</div><div class="metric">474</div><span class="good">Last scan &lt; 24h</span></div></div><div class="panel" style="margin-top:13px"><div class="head"><h2>Recent Artifact Extractions</h2><span class="muted">Automated + analyst-initiated</span></div><div class="activity"><div class="item"><i class="dot"></i><div><b>Registry run-key persistence extracted</b><p>WS-FIN-07 · HKCU\Software\Microsoft\Windows\CurrentVersion\Run</p></div><span class="muted">11m</span></div><div class="item"><i class="dot"></i><div><b>Prefetch and shimcache pulled</b><p>WS-FIN-07 · 214 execution artifacts parsed</p></div><span class="muted">18m</span></div><div class="item"><i class="dot"></i><div><b>Windows Event Log export</b><p>SRV-DC-01 · Security + Sysmon channels, last 30 days</p></div><span class="muted">1h</span></div><div class="item"><i class="dot"></i><div><b>Launch agent / plist inventory</b><p>WS-EXEC-03 · 1 unsigned persistence item flagged</p></div><span class="muted">4h</span></div><div class="item"><i class="dot"></i><div><b>Volatile memory strings extracted</b><p>EP-3391 · Matched known loader family signature</p></div><span class="muted">6h</span></div></div></div><div class="panel" style="margin-top:13px"><div class="toolbar"><input id="endpointSearch" placeholder="Search endpoints by hostname, OS, case..." style="flex:1;min-width:220px"/><select id="endpointStatus"><option value="">All Statuses</option><option>Compromised</option><option>Under Investigation</option><option>Contained</option><option>Clean</option></select></div><div class="tablewrap"><table class="table" id="endpointTable"><thead><tr><th>Hostname</th><th>OS</th><th>Last Scan</th><th>Findings</th><th>Case</th><th>Status</th></tr></thead><tbody>
+<tr><td class="mono">WS-FIN-07</td><td>Windows 11 Enterprise</td><td>12m ago</td><td>3 IOCs matched</td><td class="mono">CASE-2031</td><td><span class="chip critical">Compromised</span></td></tr>
+<tr><td class="mono">EP-3391</td><td>Windows 11 Enterprise</td><td>2h ago</td><td>Loader quarantined</td><td>—</td><td><span class="chip warning">Contained</span></td></tr>
+<tr><td class="mono">WS-EXEC-03</td><td>macOS Sonoma 14</td><td>5h ago</td><td>Unsigned launch agent</td><td class="mono">CASE-2029</td><td><span class="chip warning">Investigating</span></td></tr>
+<tr><td class="mono">SRV-APP-06</td><td>Ubuntu 22.04 LTS</td><td>3d ago</td><td>Unexpected cron entry</td><td class="mono">CASE-2024</td><td><span class="chip warning">Investigating</span></td></tr>
+<tr><td class="mono">WS-HR-22</td><td>Windows 10 Enterprise</td><td>9h ago</td><td>Clean</td><td class="mono">CASE-2028</td><td><span class="chip good">Clean</span></td></tr>
+<tr><td class="mono">SRV-DC-01</td><td>Windows Server 2022</td><td>1d ago</td><td>Clean</td><td>—</td><td><span class="chip good">Clean</span></td></tr>
+<tr><td class="mono">LT-SALES-14</td><td>Windows 11 Pro</td><td>1d ago</td><td>Clean</td><td>—</td><td><span class="chip good">Clean</span></td></tr>
+</tbody></table></div></div></section>
+<section class="page" id="network"><div class="heading"><div><h1>Network Forensics</h1><p>Full packet capture, flow analysis, and traffic reconstruction for incident investigations.</p></div><span class="chip medium">58 Captures</span></div><div class="grid4"><div class="card"><div class="sub">PCAP Captures</div><div class="metric">58</div><span class="muted">2.1TB analyzed</span></div><div class="card"><div class="sub">Flagged Sessions</div><div class="metric">14</div><span class="warning">Under review</span></div><div class="card"><div class="sub">Exfil Attempts Blocked</div><div class="metric">6</div><span class="good">This month</span></div><div class="card"><div class="sub">Avg. Capture Retention</div><div class="metric">90d</div><span class="muted">Full-fidelity storage</span></div></div><div class="split"><div class="panel"><div class="head"><h2>Traffic Volume</h2><span class="muted">Last 7 days, GB</span></div><div class="chart"><i class="bar" style="height:51%"></i><i class="bar" style="height:64%"></i><i class="bar" style="height:47%"></i><i class="bar" style="height:88%"></i><i class="bar" style="height:59%"></i><i class="bar" style="height:73%"></i><i class="bar" style="height:65%"></i></div></div><div class="panel"><div class="head"><h2>Flagged Connections</h2><span class="chip warning">14 flagged</span></div><div class="activity"><div class="item"><i class="dot"></i><div><b>Large outbound transfer</b><p>WS-FIN-07 → 203.0.113.44 · 1.2GB over TLS</p></div><span class="muted">Blocked</span></div><div class="item"><i class="dot"></i><div><b>C2 beacon signature</b><p>GW-EDGE-02 → 198.51.100.19 · Regular 60s interval</p></div><span class="muted">Blocked</span></div><div class="item"><i class="dot"></i><div><b>Anomalous DNS query volume</b><p>WS-FIN-07 · Possible DNS tunneling</p></div><span class="muted">Investigating</span></div><div class="item"><i class="dot"></i><div><b>New-ASN destination</b><p>WS-EXEC-03 → 203.0.113.77 · First contact, 640MB</p></div><span class="muted">Investigating</span></div></div></div></div><div class="panel" style="margin-top:13px"><div class="tablewrap"><table class="table" id="networkTable"><thead><tr><th>Source</th><th>Destination</th><th>Protocol</th><th>Bytes</th><th>Flag Reason</th><th>Status</th></tr></thead><tbody>
+<tr><td class="mono">10.20.4.107 (WS-FIN-07)</td><td class="mono">203.0.113.44</td><td>TCP/443</td><td>1.2GB</td><td>Data exfil pattern - large outbound</td><td><span class="chip critical">Blocked</span></td></tr>
+<tr><td class="mono">10.20.1.5 (GW-EDGE-02)</td><td class="mono">198.51.100.19</td><td>TCP/4444</td><td>84MB</td><td>C2 beacon signature</td><td><span class="chip critical">Blocked</span></td></tr>
+<tr><td class="mono">10.20.4.107 (WS-FIN-07)</td><td class="mono">203.0.113.201</td><td>UDP/53</td><td>340MB</td><td>Anomalous DNS query volume</td><td><span class="chip warning">Investigating</span></td></tr>
+<tr><td class="mono">172.16.8.22</td><td class="mono">192.0.2.15</td><td>TCP/22</td><td>12MB</td><td>Brute-force SSH attempts</td><td><span class="chip critical">Blocked</span></td></tr>
+<tr><td class="mono">10.20.2.90 (WS-EXEC-03)</td><td class="mono">203.0.113.77</td><td>TCP/443</td><td>640MB</td><td>New destination ASN, first contact</td><td><span class="chip warning">Investigating</span></td></tr>
+<tr><td class="mono">10.20.6.14</td><td class="mono">198.51.100.230</td><td>UDP/123</td><td>4MB</td><td>NTP amplification pattern</td><td><span class="chip medium">Monitoring</span></td></tr>
+<tr><td class="mono">10.20.4.201</td><td class="mono">203.0.113.12</td><td>TCP/443</td><td>2.4GB</td><td>Scheduled backup transfer (baseline)</td><td><span class="chip good">Allowed</span></td></tr>
+</tbody></table></div></div></section>
+<section class="page" id="assets"><div class="heading"><div><h1>Asset Intelligence</h1><p>Continuous discovery and risk scoring across your full asset inventory.</p></div><span class="chip medium">1,842 Assets</span></div><div class="grid4"><div class="card"><div class="sub">Total Assets</div><div class="metric">1,842</div><span class="muted">Auto-discovered daily</span></div><div class="card"><div class="sub">Internet-Exposed</div><div class="metric">63</div><span class="warning">Review recommended</span></div><div class="card"><div class="sub">Critical Assets</div><div class="metric">128</div><span class="medium">Crown-jewel tier</span></div><div class="card"><div class="sub">Unmanaged / Shadow IT</div><div class="metric">22</div><span class="critical">No agent coverage</span></div></div><div class="panel" style="margin-top:13px"><div class="toolbar"><input id="assetsSearch" placeholder="Search assets by name, owner, type..." style="flex:1;min-width:220px"/><select id="assetsCriticality"><option value="">All Criticality</option><option>Critical</option><option>High</option><option>Medium</option><option>Low</option><option>Unmanaged</option></select><select id="assetsExposure"><option value="">All Exposure</option><option>Internet-facing</option><option>Internal</option></select></div><div class="tablewrap"><table class="table" id="assetsTable"><thead><tr><th>Asset</th><th>Type</th><th>Owner</th><th>Criticality</th><th>Exposure</th><th>Last Seen</th><th>Risk Score</th></tr></thead><tbody>
+<tr><td class="mono">api-gw-14.client.internal</td><td>API Gateway</td><td>Platform Eng</td><td><span class="chip critical">Critical</span></td><td>Internet-facing</td><td>3m ago</td><td><span class="chip critical">91</span></td></tr>
+<tr><td class="mono">ws-fin-07</td><td>Workstation</td><td>Finance Dept</td><td><span class="chip high">High</span></td><td>Internal</td><td>12m ago</td><td><span class="chip critical">87</span></td></tr>
+<tr><td class="mono">shadow-marketing-vm</td><td>Unmanaged VM</td><td>Unknown</td><td><span class="chip critical">Unmanaged</span></td><td>Internet-facing</td><td>2d ago</td><td><span class="chip critical">79</span></td></tr>
+<tr><td class="mono">s3-client-backups-prod</td><td>Cloud Storage</td><td>Platform Eng</td><td><span class="chip high">High</span></td><td>Internet-facing (ACL flagged)</td><td>22m ago</td><td><span class="chip warning">74</span></td></tr>
+<tr><td class="mono">legacy-crm.client.com</td><td>Web Application</td><td>Sales Ops</td><td><span class="chip warning">Medium</span></td><td>Internet-facing</td><td>1h ago</td><td><span class="chip warning">68</span></td></tr>
+<tr><td class="mono">db-prod-03</td><td>Database Server</td><td>Data Eng</td><td><span class="chip critical">Critical</span></td><td>Internal (VPN only)</td><td>8m ago</td><td><span class="chip warning">62</span></td></tr>
+<tr><td class="mono">mail-gw-01</td><td>Email Gateway</td><td>IT Ops</td><td><span class="chip high">High</span></td><td>Internet-facing</td><td>5m ago</td><td><span class="chip warning">55</span></td></tr>
+<tr><td class="mono">iot-badge-reader-12</td><td>IoT / Access Control</td><td>Facilities</td><td><span class="chip good">Low</span></td><td>Internal</td><td>4h ago</td><td><span class="chip good">24</span></td></tr>
+</tbody></table></div></div></section>
+<section class="page" id="vulns"><div class="heading"><div><h1>Vulnerabilities</h1><p>Continuously updated CVE tracking correlated to your live asset inventory.</p></div><span class="chip critical">18 Critical</span></div><div class="grid4"><div class="card"><div class="sub">Total CVEs Tracked</div><div class="metric">1,247</div><span class="muted">Correlated to assets</span></div><div class="card"><div class="sub">Critical</div><div class="metric">18</div><span class="critical">Prioritize now</span></div><div class="card"><div class="sub">Exploitable in the Wild</div><div class="metric">7</div><span class="critical">Active exploitation</span></div><div class="card"><div class="sub">Patched This Month</div><div class="metric">94</div><span class="good">↑ 21% vs last month</span></div></div><div class="panel" style="margin-top:13px"><div class="toolbar"><input id="vulnsSearch" placeholder="Search by CVE ID or keyword..." style="flex:1;min-width:220px"/><select id="vulnsSeverity"><option value="">All Severities</option><option>Critical</option><option>High</option><option>Medium</option><option>Low</option></select><select id="vulnsStatus"><option value="">All Statuses</option><option>Open</option><option>Patching</option><option>Patched</option></select></div><div class="tablewrap"><table class="table" id="vulnsTable"><thead><tr><th>CVE ID</th><th>Description</th><th>Severity</th><th>CVSS</th><th>Affected Asset</th><th>Status</th><th>Published</th></tr></thead><tbody>
+<tr><td class="mono">CVE-2026-31842</td><td>Remote code execution in exposed API gateway auth module</td><td><span class="chip critical">Critical</span></td><td>9.8</td><td class="mono">api-gw-14</td><td><span class="chip critical">Open</span></td><td>Aug 15, 2026</td></tr>
+<tr><td class="mono">CVE-2026-27230</td><td>Authentication bypass in outdated VPN concentrator firmware</td><td><span class="chip critical">Critical</span></td><td>9.1</td><td class="mono">gw-edge-02</td><td><span class="chip critical">Open</span></td><td>Jul 12, 2026</td></tr>
+<tr><td class="mono">CVE-2026-30117</td><td>Privilege escalation via misconfigured sudo policy</td><td><span class="chip critical">Critical</span></td><td>8.8</td><td class="mono">srv-app-06</td><td><span class="chip warning">Patching</span></td><td>Aug 3, 2026</td></tr>
+<tr><td class="mono">CVE-2026-29904</td><td>Deserialization flaw in legacy CRM web application</td><td><span class="chip high">High</span></td><td>8.1</td><td class="mono">legacy-crm</td><td><span class="chip critical">Open</span></td><td>Jul 28, 2026</td></tr>
+<tr><td class="mono">CVE-2026-20016</td><td>Buffer overflow in legacy database driver</td><td><span class="chip high">High</span></td><td>7.8</td><td class="mono">db-prod-03</td><td><span class="chip warning">Patching</span></td><td>May 24, 2026</td></tr>
+<tr><td class="mono">CVE-2026-28551</td><td>SSRF in cloud storage lifecycle automation</td><td><span class="chip high">High</span></td><td>7.5</td><td class="mono">s3-client-backups-prod</td><td><span class="chip warning">Patching</span></td><td>Jul 20, 2026</td></tr>
+<tr><td class="mono">CVE-2026-25890</td><td>Cross-site scripting in HR self-service portal</td><td><span class="chip warning">Medium</span></td><td>6.1</td><td class="mono">ws-hr-22</td><td><span class="chip good">Patched</span></td><td>Jun 30, 2026</td></tr>
+<tr><td class="mono">CVE-2026-24417</td><td>Denial of service in mail gateway content filter</td><td><span class="chip warning">Medium</span></td><td>5.9</td><td class="mono">mail-gw-01</td><td><span class="chip good">Patched</span></td><td>Jun 18, 2026</td></tr>
+<tr><td class="mono">CVE-2026-22108</td><td>Information disclosure in IoT management API</td><td><span class="chip good">Low</span></td><td>4.3</td><td class="mono">iot-badge-reader-12</td><td><span class="chip critical">Open</span></td><td>Jun 2, 2026</td></tr>
+</tbody></table></div><p class="muted" style="margin-top:10px">Showing 9 of 1,247 tracked CVEs.</p></div></section>
+<section class="page" id="siem"><div class="heading"><div><h1>SIEM Explorer</h1><p>Query, correlate, and investigate security events across every ingested log source.</p></div><span class="chip good">31 Sources Connected</span></div><div class="grid4"><div class="card"><div class="sub">Events Ingested Today</div><div class="metric">4.8M</div><span class="muted">Across 31 sources</span></div><div class="card"><div class="sub">Log Sources Connected</div><div class="metric">31</div><span class="good">100% healthy</span></div><div class="card"><div class="sub">Active Correlation Rules</div><div class="metric">214</div><span class="muted">12 added this month</span></div><div class="card"><div class="sub">Avg. Query Latency</div><div class="metric">340ms</div><span class="good">P99 &lt; 1.2s</span></div></div><div class="panel" style="margin-top:13px"><div class="toolbar"><input id="siemQuery" placeholder='e.g. source:edr AND severity:critical' style="flex:2;min-width:260px"/><select id="siemRange"><option>Last 15 min</option><option selected>Last 1 hour</option><option>Last 24 hours</option><option>Last 7 days</option><option>Last 30 days</option></select><select id="siemSource"><option value="">All Sources</option><option>EDR</option><option>Firewall</option><option>Identity Provider</option><option>Cloud (CSPM)</option><option>DNS</option><option>Email Gateway</option><option>VPN</option></select><button class="btn primary" id="siemRunBtn">Run Query</button></div><div class="tablewrap"><table class="table" id="siemTable"><thead><tr><th>Time</th><th>Source</th><th>Event Type</th><th>Severity</th><th>User / Host</th><th>Details</th></tr></thead><tbody>
+<tr><td class="mono">14:32:07</td><td>EDR</td><td>Process Injection Detected</td><td><span class="chip critical">Critical</span></td><td class="mono">WS-FIN-07</td><td>rundll32.exe spawned from Word, injected into explorer.exe</td></tr>
+<tr><td class="mono">14:31:52</td><td>Firewall</td><td>Outbound Connection Blocked</td><td><span class="chip high">High</span></td><td class="mono">GW-EDGE-02</td><td>Blocked TCP/4444 to 198.51.100.19</td></tr>
+<tr><td class="mono">14:29:10</td><td>Identity Provider</td><td>Impossible Travel</td><td><span class="chip high">High</span></td><td>jalvarez@bankcorp-client.com</td><td>Lagos → Warsaw, 11 min delta</td></tr>
+<tr><td class="mono">14:18:44</td><td>Cloud (CSPM)</td><td>Public Bucket ACL Change</td><td><span class="chip high">High</span></td><td class="mono">s3-client-backups-prod</td><td>ACL changed to public-read</td></tr>
+<tr><td class="mono">13:55:02</td><td>DNS</td><td>Anomalous Query Volume</td><td><span class="chip warning">Medium</span></td><td class="mono">WS-FIN-07</td><td>4,200 queries/min to a single domain</td></tr>
+<tr><td class="mono">13:40:19</td><td>Email Gateway</td><td>Phishing Link Blocked</td><td><span class="chip warning">Medium</span></td><td>finance-dl@client.com</td><td>Credential-harvesting URL intercepted</td></tr>
+<tr><td class="mono">13:12:37</td><td>EDR</td><td>Scheduled Task Created</td><td><span class="chip warning">Medium</span></td><td class="mono">SRV-APP-06</td><td>Persistence mechanism (cron-equivalent)</td></tr>
+<tr><td class="mono">12:58:03</td><td>VPN</td><td>Auth Failure Burst</td><td><span class="chip good">Low</span></td><td class="mono">remote-user-118</td><td>6 failed attempts, then a success</td></tr>
+</tbody></table></div></div></section>
+<section class="page" id="identity"><div class="heading"><div><h1>Identity Security</h1><p>Privileged access monitoring, MFA coverage, and anomalous authentication detection.</p></div><span class="chip warning">11 Anomalies (7d)</span></div><div class="grid4"><div class="card"><div class="sub">Total Identities</div><div class="metric">1,204</div><span class="muted">Human + service accounts</span></div><div class="card"><div class="sub">Privileged Accounts</div><div class="metric">68</div><span class="medium">Reviewed quarterly</span></div><div class="card"><div class="sub">MFA Coverage</div><div class="metric">94%</div><span class="warning">73 accounts without MFA</span></div><div class="card"><div class="sub">Anomalous Logins (7d)</div><div class="metric">11</div><span class="warning">4 unresolved</span></div></div><div class="panel" style="margin-top:13px"><div class="toolbar"><input id="identitySearch" placeholder="Search by user, department, role..." style="flex:1;min-width:220px"/><select id="identityStatus"><option value="">All Statuses</option><option>Active</option><option>Under Review</option><option>Flagged</option></select></div><div class="tablewrap"><table class="table" id="identityTable"><thead><tr><th>User</th><th>Department</th><th>Role</th><th>MFA</th><th>Last Login</th><th>Risk Flags</th><th>Status</th></tr></thead><tbody>
+<tr><td class="mono">jalvarez@bankcorp-client.com</td><td>Finance</td><td>Financial Controller</td><td><span class="chip good">Enabled</span></td><td>2m ago</td><td>Impossible travel</td><td><span class="chip warning">Under Review</span></td></tr>
+<tr><td class="mono">mchen@centinell-msp.com</td><td>Forensics (MSP)</td><td>Forensic Analyst</td><td><span class="chip good">Enabled</span></td><td>14m ago</td><td>—</td><td><span class="chip good">Active</span></td></tr>
+<tr><td class="mono">rokafor@centinell-msp.com</td><td>Legal (MSP)</td><td>Legal Counsel</td><td><span class="chip good">Enabled</span></td><td>1h ago</td><td>—</td><td><span class="chip good">Active</span></td></tr>
+<tr><td class="mono">svc-backup-prod</td><td>Service Account</td><td>Automation</td><td><span class="chip warning">N/A</span></td><td>9m ago</td><td>Elevated, no owner review in 90d</td><td><span class="chip warning">Flagged</span></td></tr>
+<tr><td class="mono">admin-legacy-crm</td><td>Shared Admin</td><td>CRM Administrator</td><td><span class="chip critical">Disabled</span></td><td>41d ago</td><td>Shared credential, no MFA</td><td><span class="chip critical">Flagged</span></td></tr>
+<tr><td class="mono">remote-user-118</td><td>Contractor</td><td>Field Technician</td><td><span class="chip good">Enabled</span></td><td>6h ago</td><td>Auth failure burst</td><td><span class="chip good">Active</span></td></tr>
+<tr><td class="mono">dchen-contractor</td><td>Contractor (Offboarded)</td><td>Former Analyst</td><td><span class="chip good">Enabled</span></td><td>62d ago</td><td>Access not revoked post-offboarding</td><td><span class="chip critical">Flagged</span></td></tr>
+</tbody></table></div></div></section>
+<section class="page" id="cloud"><div class="heading"><div><h1>Email &amp; Cloud</h1><p>Phishing defense, business email compromise detection, and cloud application governance.</p></div><span class="chip good">61 Threats Blocked Today</span></div><div class="grid4"><div class="card"><div class="sub">Emails Scanned Today</div><div class="metric">28,412</div><span class="muted">Real-time gateway</span></div><div class="card"><div class="sub">Phishing Blocked</div><div class="metric">61</div><span class="good">Today</span></div><div class="card"><div class="sub">Cloud Apps Monitored</div><div class="metric">84</div><span class="muted">via CASB discovery</span></div><div class="card"><div class="sub">DLP Flags (7d)</div><div class="metric">9</div><span class="warning">2 unresolved</span></div></div><div class="split"><div class="panel"><div class="head"><h2>Phishing Attempts Trend</h2><span class="muted">Last 7 days</span></div><div class="chart"><i class="bar" style="height:40%"></i><i class="bar" style="height:55%"></i><i class="bar" style="height:35%"></i><i class="bar" style="height:78%"></i><i class="bar" style="height:60%"></i><i class="bar" style="height:95%"></i><i class="bar" style="height:52%"></i></div></div><div class="panel"><div class="head"><h2>Recent Blocked Threats</h2><span class="chip good">All contained</span></div><div class="activity"><div class="item"><i class="dot"></i><div><b>Credential harvesting page</b><p>Impersonated IT helpdesk · sent to finance-dl@client.com</p></div><span class="muted">Blocked</span></div><div class="item"><i class="dot"></i><div><b>Invoice fraud attempt (BEC)</b><p>Spoofed vendor domain · accounts-payable@client.com</p></div><span class="muted">Blocked</span></div><div class="item"><i class="dot"></i><div><b>Malicious OAuth consent request</b><p>Third-party app requested mailbox-wide access</p></div><span class="muted">Blocked</span></div><div class="item"><i class="dot"></i><div><b>QR-code phishing</b><p>Embedded in PDF · sent to hr-benefits@client.com</p></div><span class="muted">Blocked</span></div><div class="item"><i class="dot"></i><div><b>Spoofed executive display name</b><p>Wire-transfer request · cfo-office@client.com</p></div><span class="muted">Blocked</span></div></div></div></div><div class="panel" style="margin-top:13px"><div class="head"><h2>Cloud Application Inventory</h2><span class="muted">via CASB discovery</span></div><div class="tablewrap"><table class="table" id="cloudTable"><thead><tr><th>Application</th><th>Category</th><th>Users</th><th>Data Sensitivity</th><th>Status</th></tr></thead><tbody>
+<tr><td>Salesforce</td><td>CRM</td><td>214</td><td><span class="chip high">High</span></td><td><span class="chip good">Sanctioned</span></td></tr>
+<tr><td>Google Workspace</td><td>Productivity</td><td>1,180</td><td><span class="chip high">High</span></td><td><span class="chip good">Sanctioned</span></td></tr>
+<tr><td>Slack</td><td>Collaboration</td><td>940</td><td><span class="chip warning">Medium</span></td><td><span class="chip good">Sanctioned</span></td></tr>
+<tr><td>Personal Dropbox (unmanaged)</td><td>File Storage</td><td>18</td><td><span class="chip high">High</span></td><td><span class="chip critical">Shadow IT</span></td></tr>
+<tr><td>Zoom</td><td>Collaboration</td><td>860</td><td><span class="chip warning">Medium</span></td><td><span class="chip good">Sanctioned</span></td></tr>
+<tr><td>Unattributed AI Writing Tool</td><td>Productivity</td><td>47</td><td><span class="chip warning">Medium</span></td><td><span class="chip warning">Under Review</span></td></tr>
+<tr><td>Figma</td><td>Design</td><td>32</td><td><span class="chip good">Low</span></td><td><span class="chip good">Sanctioned</span></td></tr>
+</tbody></table></div></div></section>
+<section class="page" id="intel"><div class="heading"><div><h1>Threat Intelligence</h1><p>Curated indicators, adversary tracking, and MITRE ATT&amp;CK coverage mapped to your environment.</p></div><span class="chip medium">34 Actors Tracked</span></div><div class="grid4"><div class="card"><div class="sub">Active Threat Actors Tracked</div><div class="metric">34</div><span class="muted">Relevant to your sector</span></div><div class="card"><div class="sub">IOCs Ingested (24h)</div><div class="metric">8,120</div><span class="muted">Auto-correlated</span></div><div class="card"><div class="sub">Campaigns Monitored</div><div class="metric">12</div><span class="muted">Active tracking</span></div><div class="card"><div class="sub">Industry Alerts (7d)</div><div class="metric">5</div><span class="warning">2 sector-specific</span></div></div><div class="panel" style="margin-top:13px"><div class="tablewrap"><table class="table" id="intelTable"><thead><tr><th>Indicator</th><th>Type</th><th>Actor / Campaign</th><th>Confidence</th><th>First Seen</th><th>Source</th></tr></thead><tbody>
+<tr><td class="hash">198.51.100.19</td><td>IP</td><td>UNC-4471 "GoldenJackal"</td><td><span class="chip high">High</span></td><td>Aug 14, 2026</td><td>Internal Detection</td></tr>
+<tr><td class="hash">e172b2fc61bea543…cfc472</td><td>SHA-256</td><td>Ransomware loader (CASE-2024)</td><td><span class="chip critical">Critical</span></td><td>Jul 29, 2026</td><td>Internal (EDR)</td></tr>
+<tr><td class="hash">203.0.113.201</td><td>IP</td><td>Suspected DNS tunneling infra</td><td><span class="chip warning">Medium</span></td><td>Aug 15, 2026</td><td>Internal Detection</td></tr>
+<tr><td class="hash">81a67b5eba3c9736…7c51f</td><td>SHA-256</td><td>Loader family "GenKryptik"</td><td><span class="chip high">High</span></td><td>Aug 13, 2026</td><td>Internal (EDR)</td></tr>
+<tr><td class="hash">update-secure-portal.info</td><td>Domain</td><td>Generic phishing kit</td><td><span class="chip warning">Medium</span></td><td>Aug 12, 2026</td><td>Industry ISAC Feed</td></tr>
+<tr><td class="hash">finance-invoice-portal.net</td><td>Domain</td><td>BEC infrastructure cluster</td><td><span class="chip high">High</span></td><td>Aug 9, 2026</td><td>Vendor Threat Feed</td></tr>
+<tr><td class="hash">cee36aa20032c9dd…cff46</td><td>SHA-256</td><td>Generic credential stealer</td><td><span class="chip warning">Medium</span></td><td>Aug 5, 2026</td><td>Vendor Threat Feed</td></tr>
+</tbody></table></div></div><div class="panel" style="margin-top:13px"><div class="head"><h2>MITRE ATT&amp;CK Coverage</h2><span class="muted">Techniques observed, last 90 days</span></div><div style="display:flex;flex-wrap:wrap;gap:8px"><span class="chip medium">Initial Access · 4</span><span class="chip medium">Execution · 7</span><span class="chip warning">Persistence · 9</span><span class="chip medium">Privilege Escalation · 5</span><span class="chip critical">Defense Evasion · 11</span><span class="chip warning">Credential Access · 6</span><span class="chip good">Discovery · 3</span><span class="chip good">Lateral Movement · 2</span><span class="chip medium">Collection · 4</span><span class="chip warning">Exfiltration · 3</span><span class="chip critical">Command &amp; Control · 8</span><span class="chip good">Impact · 2</span></div></div></section>
+<section class="page" id="risk"><div class="heading"><div><h1>Risk &amp; Compliance</h1><p>Framework coverage, audit readiness, and open findings across your compliance posture.</p></div><span class="chip warning">14 Open Findings</span></div><div class="grid4"><div class="card"><div class="sub">Overall Risk Score</div><div class="metric">72/100</div><span class="warning">Moderate</span></div><div class="card"><div class="sub">Open Findings</div><div class="metric">14</div><span class="warning">3 high severity</span></div><div class="card"><div class="sub">Frameworks Tracked</div><div class="metric">5</div><span class="muted">Auto-mapped controls</span></div><div class="card"><div class="sub">Audits This Quarter</div><div class="metric">2</div><span class="muted">1 in progress</span></div></div><div class="panel" style="margin-top:13px"><div class="head"><h2>Compliance Frameworks</h2><span class="muted">Control coverage</span></div><div style="display:grid;gap:15px">
+<div><div class="head" style="margin-bottom:6px"><span>ISO/IEC 27001:2022</span><span class="chip good">Compliant · 92%</span></div><div class="progress"><div class="progress-fill" style="width:92%"></div></div></div>
+<div><div class="head" style="margin-bottom:6px"><span>SOC 2 Type II</span><span class="chip good">Compliant · 87%</span></div><div class="progress"><div class="progress-fill" style="width:87%"></div></div></div>
+<div><div class="head" style="margin-bottom:6px"><span>PCI DSS 4.0</span><span class="chip good">Compliant · 95%</span></div><div class="progress"><div class="progress-fill" style="width:95%"></div></div></div>
+<div><div class="head" style="margin-bottom:6px"><span>NIST CSF 2.0</span><span class="chip warning">In Progress · 78%</span></div><div class="progress"><div class="progress-fill" style="width:78%"></div></div></div>
+<div><div class="head" style="margin-bottom:6px"><span>GDPR (Art. 32 - Security of Processing)</span><span class="chip critical">Gap Identified · 64%</span></div><div class="progress"><div class="progress-fill" style="width:64%"></div></div></div>
+</div></div><div class="panel" style="margin-top:13px"><div class="head"><h2>Open Findings</h2><button class="btn" data-go="reports">View reports</button></div><div class="tablewrap"><table class="table" id="riskTable"><thead><tr><th>Finding</th><th>Framework</th><th>Severity</th><th>Owner</th><th>Due Date</th><th>Status</th></tr></thead><tbody>
+<tr><td>Encryption at rest not enforced on legacy backup volumes</td><td>GDPR Art. 32</td><td><span class="chip high">High</span></td><td>Platform Eng</td><td>Aug 30, 2026</td><td><span class="chip critical">Open</span></td></tr>
+<tr><td>MFA not enforced on 73 accounts</td><td>NIST CSF 2.0 PR.AA</td><td><span class="chip high">High</span></td><td>IT Ops</td><td>Aug 28, 2026</td><td><span class="chip critical">Open</span></td></tr>
+<tr><td>Access review overdue for 12 privileged accounts</td><td>ISO 27001 A.9.2</td><td><span class="chip warning">Medium</span></td><td>IT Ops</td><td>Sep 5, 2026</td><td><span class="chip warning">In Progress</span></td></tr>
+<tr><td>Incident response runbook not updated post-reorg</td><td>NIST CSF 2.0 RS.MA</td><td><span class="chip warning">Medium</span></td><td>Security Team</td><td>Sep 12, 2026</td><td><span class="chip warning">In Progress</span></td></tr>
+<tr><td>Quarterly penetration test overdue</td><td>PCI DSS 11.4</td><td><span class="chip warning">Medium</span></td><td>Security Team</td><td>Sep 1, 2026</td><td><span class="chip medium">Scheduled</span></td></tr>
+<tr><td>Vendor risk assessment missing for 3 new SaaS tools</td><td>SOC 2 CC9.2</td><td><span class="chip good">Low</span></td><td>Procurement</td><td>Sep 20, 2026</td><td><span class="chip warning">Open</span></td></tr>
+<tr><td>Data retention policy not applied to email archive</td><td>GDPR Art. 5</td><td><span class="chip good">Low</span></td><td>Legal / IT</td><td>Oct 1, 2026</td><td><span class="chip warning">Open</span></td></tr>
+</tbody></table></div><p class="muted" style="margin-top:10px">Showing 7 of 14 open findings.</p></div></section>
+<section class="page" id="reports"><div class="heading"><div><h1>Reports</h1><p>Generate, manage, and export case summaries, compliance audits, and executive briefs.</p></div><span class="chip medium">37 Reports</span></div><div class="panel"><div class="head"><h2>AI Report Generator</h2><span class="muted">Powered by Centinell AI</span></div><p class="muted" style="margin:0 0 12px">Draft a first pass in seconds, then review and export.</p><div class="suggest"><button type="button" data-ai-prompt="Draft a case summary report for CASE-2031, written for the client's leadership team.">Generate Case Summary</button><button type="button" data-ai-prompt="Draft this month's executive security brief covering SOC activity, top risks, and open cases.">Generate Executive Brief</button><button type="button" data-ai-prompt="Summarize our current compliance posture and the highest-priority open findings across all tracked frameworks.">Generate Compliance Summary</button></div></div><div class="panel" style="margin-top:13px"><div class="toolbar"><input id="reportsSearch" placeholder="Search reports by name, case, author..." style="flex:1;min-width:220px"/><select id="reportsType"><option value="">All Types</option><option>Case Summary</option><option>Executive Brief</option><option>Compliance Audit</option><option>Incident Post-Mortem</option><option>Forensic/Legal</option></select></div><div class="tablewrap"><table class="table" id="reportsTable"><thead><tr><th>Report</th><th>Type</th><th>Case / Scope</th><th>Generated By</th><th>Date</th><th>Format</th><th></th></tr></thead><tbody>
+<tr><td>CASE-2031 Preliminary Findings</td><td>Case Summary</td><td class="mono">CASE-2031</td><td>J. Alvarez</td><td>Aug 15, 2026</td><td><span class="chip medium">PDF</span></td><td><button class="btn download-btn">Download</button></td></tr>
+<tr><td>Q3 SOC Executive Brief</td><td>Executive Brief</td><td>Org-wide</td><td>Centinell AI</td><td>Aug 10, 2026</td><td><span class="chip medium">PDF</span></td><td><button class="btn download-btn">Download</button></td></tr>
+<tr><td>ISO 27001 Internal Audit Report</td><td>Compliance Audit</td><td>Org-wide</td><td>R. Okafor</td><td>Aug 1, 2026</td><td><span class="chip medium">DOCX</span></td><td><button class="btn download-btn">Download</button></td></tr>
+<tr><td>CASE-2024 Ransomware Post-Mortem</td><td>Incident Post-Mortem</td><td class="mono">CASE-2024</td><td>M. Chen</td><td>Jul 31, 2026</td><td><span class="chip medium">PDF</span></td><td><button class="btn download-btn">Download</button></td></tr>
+<tr><td>CASE-2019 Chain of Custody Export</td><td>Forensic/Legal</td><td class="mono">CASE-2019</td><td>Centinell Reporting Engine</td><td>Jul 20, 2026</td><td><span class="chip medium">PDF</span></td><td><button class="btn download-btn">Download</button></td></tr>
+<tr><td>Monthly Vulnerability Summary — July</td><td>Compliance Audit</td><td>Org-wide</td><td>Centinell AI</td><td>Aug 1, 2026</td><td><span class="chip medium">PDF</span></td><td><button class="btn download-btn">Download</button></td></tr>
+<tr><td>CASE-2028 Evidence Manifest</td><td>Case Summary</td><td class="mono">CASE-2028</td><td>S. Whitfield</td><td>Aug 11, 2026</td><td><span class="chip medium">DOCX</span></td><td><button class="btn download-btn">Download</button></td></tr>
+</tbody></table></div></div></section>
+<section class="page" id="ai"><div class="heading"><div><h1>Centinell AI</h1><p>Your AI forensic and security analyst — ask questions about cases, alerts, and evidence in plain language.</p></div><span class="chip medium">AI Forensic Analyst</span></div><div class="info">Centinell AI calls the Claude API directly from your browser using your own API key. Nothing is proxied through Centinell servers, and your key is kept in memory for this session only — it is never stored or sent anywhere except directly to Anthropic.</div><div class="panel"><div class="head"><h2>Connection</h2><span class="chip warning" id="aiConnStatus">Not connected</span></div><div style="display:flex;gap:10px;align-items:end;flex-wrap:wrap"><div class="field" style="flex:1;min-width:240px"><label>Claude API Key</label><input type="password" id="apiKeyInput" placeholder="sk-ant-..."/></div><button class="btn primary" id="apiKeySaveBtn">Connect</button></div><p class="muted" style="margin:10px 0 0">Need a key? Create one at <span class="mono">console.anthropic.com</span>.</p></div><div class="panel" style="margin-top:13px"><div class="suggest"><button type="button" data-ai-prompt="Summarize the current status of CASE-2031 and recommended next steps.">Summarize CASE-2031</button><button type="button" data-ai-prompt="Explain CVE-2026-31842 in plain language and what remediation priority it warrants.">Explain CVE-2026-31842</button><button type="button" data-ai-prompt="Explain what a hash-chained chain of custody is and why it matters for legal admissibility.">What is chain of custody?</button><button type="button" data-ai-prompt="Draft a short executive brief summarizing this week's security posture for a non-technical leadership audience.">Draft an executive brief</button></div><div class="ai-messages" id="aiMessages"><div class="msg bot">Hello — I'm Centinell AI, your forensic and security analyst assistant. I can help summarize cases, explain alerts and IOCs, draft reports, and walk through MITRE ATT&amp;CK mappings. Enter your Claude API key above, then ask me anything about your environment.</div></div><div class="composer"><input id="aiInput" placeholder="Ask about a case, alert, CVE, or request a report draft..."/><button class="btn primary" id="aiSendBtn">Send</button></div></div></section>
+<section class="page" id="settings"><div class="heading"><div><h1>Settings</h1><p>Organization configuration, notification preferences, integrations, and environment details.</p></div><span class="chip medium">Demo Environment</span></div><div class="page-grid"><div style="display:grid;gap:13px"><div class="panel"><div class="head"><h2>Organization</h2></div><div class="form"><div class="field"><label>Organization Name</label><input id="orgName" value="BankCorp Client — Managed Detection &amp; Response"/></div><div class="field"><label>Time Zone</label><select id="orgTz"><option>UTC</option><option selected>America/New_York</option><option>America/Chicago</option><option>America/Los_Angeles</option><option>Europe/London</option></select></div><div class="field"><label>Evidence Retention (days)</label><input id="orgRetention" type="number" value="2555"/></div><div class="formactions"><button class="btn primary" id="saveOrgBtn">Save Changes</button></div></div></div><div class="panel"><div class="head"><h2>Notifications</h2></div><div class="settings-row"><div><b>Critical alert emails</b><span class="muted">Send an email the moment a critical alert fires.</span></div><label class="switch"><input type="checkbox" checked/><span class="slider"></span></label></div><div class="settings-row"><div><b>SMS for P1 incidents</b><span class="muted">Text the on-call analyst for priority-1 incidents only.</span></div><label class="switch"><input type="checkbox" checked/><span class="slider"></span></label></div><div class="settings-row"><div><b>Weekly executive digest</b><span class="muted">A Friday summary of cases, alerts, and open findings.</span></div><label class="switch"><input type="checkbox" checked/><span class="slider"></span></label></div><div class="settings-row"><div><b>Weekly compliance reminders</b><span class="muted">Nudge owners on findings approaching their due date.</span></div><label class="switch"><input type="checkbox"/><span class="slider"></span></label></div></div></div><div style="display:grid;gap:13px"><div class="panel"><div class="head"><h2>Integrations</h2></div><div class="settings-row"><div><b>SIEM Ingestion</b><span class="muted">Compatible with Splunk, Sentinel, QRadar</span></div><span class="chip good">Connected</span></div><div class="settings-row"><div><b>Ticketing</b><span class="muted">Compatible with ServiceNow, Jira</span></div><span class="chip good">Connected</span></div><div class="settings-row"><div><b>Cloud Connectors</b><span class="muted">AWS, Azure, GCP</span></div><span class="chip good">Connected</span></div><div class="settings-row"><div><b>Chat Notifications</b><span class="muted">Slack / Microsoft Teams</span></div><span class="chip warning">Not Connected</span></div></div><div class="panel"><div class="head"><h2>About</h2></div><p class="muted" style="margin:0 0 8px">This is a live product demonstration environment. All case data, alerts, identities, and organizational details shown throughout Centinell Forensics Enterprise are synthetic and used for evaluation purposes only.</p><p class="muted" style="margin:0">Centinell Forensics Enterprise v1.0 · Beacon of the Eagle LLC</p></div></div></div></section>
+</main></div><footer style="padding:12px 20px;text-align:center;color:#9bb8d7;font-size:11px;background:#04142b">Copyright © 2026 Beacon of the Eagle LLC. All Rights Reserved. · Centinell Forensics Enterprise is proprietary software.</footer>
+<div class="modal" id="caseModal"><div class="box"><div class="head"><h2>New Case</h2><button class="btn keybtn" id="caseModalClose" aria-label="Close">✕</button></div><form class="form" id="newCaseForm"><div class="field"><label>Case Title</label><input id="ncTitle" required placeholder="e.g. Suspicious Outbound Transfer - Finance"/></div><div class="field"><label>Case Type</label><select id="ncType"><option>Digital Forensics</option><option>Incident Response</option><option>Malware Analysis</option><option>Data Breach</option><option>Insider Threat</option><option>eDiscovery</option></select></div><div class="field"><label>Priority</label><select id="ncPriority"><option>Critical</option><option>High</option><option selected>Medium</option><option>Low</option></select></div><div class="field"><label>Assigned Investigator</label><select id="ncInvestigator"><option>Unassigned</option><option>J. Alvarez</option><option>M. Chen</option><option>S. Whitfield</option><option>R. Okafor</option></select></div><div class="field"><label>Description</label><textarea id="ncDesc" rows="3" placeholder="Brief summary of what triggered this case..."></textarea></div><div class="formactions"><button type="button" class="btn" id="caseModalCancel">Cancel</button><button type="submit" class="btn primary">Create Case</button></div></form></div></div>
+<div class="toast" id="toast" role="status" aria-live="polite"><b id="toastTitle"></b><p id="toastMsg"></p></div>
+<script>
+/* ===== Centinell Forensics Enterprise — app logic ===== */
+(function(){
+'use strict';
+
+/* ---------- Toast ---------- */
+var toastTimer = null;
+function showToast(title, msg, type){
+  var el = document.getElementById('toast');
+  if(!el) return;
+  document.getElementById('toastTitle').textContent = title || '';
+  document.getElementById('toastMsg').textContent = msg || '';
+  el.classList.remove('success','error');
+  if(type) el.classList.add(type);
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function(){ el.classList.remove('show'); }, 4500);
+}
+
+/* ---------- Page navigation ---------- */
+function showPage(id){
+  var target = document.getElementById(id);
+  if(!target || !target.classList.contains('page')) return;
+  document.querySelectorAll('.page').forEach(function(p){ p.classList.remove('active'); });
+  target.classList.add('active');
+  document.querySelectorAll('.nav button[data-page]').forEach(function(b){
+    b.classList.toggle('active', b.getAttribute('data-page') === id);
+  });
+  var gs = document.getElementById('search');
+  if(gs) gs.value = '';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+document.querySelectorAll('.nav button[data-page]').forEach(function(btn){
+  btn.addEventListener('click', function(){ showPage(btn.getAttribute('data-page')); });
+});
+document.querySelectorAll('[data-go]').forEach(function(btn){
+  btn.addEventListener('click', function(){ showPage(btn.getAttribute('data-go')); });
+});
+
+/* ---------- Modal ---------- */
+function openModal(id){ var m = document.getElementById(id); if(m) m.classList.add('show'); }
+function closeModal(id){ var m = document.getElementById(id); if(m) m.classList.remove('show'); }
+
+var caseBtn = document.getElementById('caseBtn');
+if(caseBtn) caseBtn.addEventListener('click', function(){ openModal('caseModal'); });
+var caseModalClose = document.getElementById('caseModalClose');
+if(caseModalClose) caseModalClose.addEventListener('click', function(){ closeModal('caseModal'); });
+var caseModalCancel = document.getElementById('caseModalCancel');
+if(caseModalCancel) caseModalCancel.addEventListener('click', function(){ closeModal('caseModal'); });
+var caseModalBackdrop = document.getElementById('caseModal');
+if(caseModalBackdrop){
+  caseModalBackdrop.addEventListener('click', function(e){
+    if(e.target === caseModalBackdrop) closeModal('caseModal');
+  });
+}
+document.addEventListener('keydown', function(e){
+  if(e.key === 'Escape') closeModal('caseModal');
+});
+
+/* ---------- New Case form ---------- */
+var nextCaseNum = 2032;
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, function(c){
+    return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c];
+  });
+}
+function priorityChipClass(priority){
+  if(priority === 'Critical') return 'critical';
+  if(priority === 'High') return 'high';
+  if(priority === 'Low') return 'good';
+  return 'warning';
+}
+function bumpOpenCaseCounts(){
+  document.querySelectorAll('.grid4 .card').forEach(function(card){
+    var sub = card.querySelector('.sub');
+    if(!sub) return;
+    var label = sub.textContent.trim();
+    if(label === 'Active Cases' || label === 'Open Cases'){
+      var m = card.querySelector('.metric');
+      if(!m) return;
+      var n = parseInt(m.textContent.replace(/,/g,''), 10);
+      if(!isNaN(n)) m.textContent = String(n + 1);
+    }
+  });
+}
+var newCaseForm = document.getElementById('newCaseForm');
+if(newCaseForm){
+  newCaseForm.addEventListener('submit', function(e){
+    e.preventDefault();
+    var titleEl = document.getElementById('ncTitle');
+    var title = titleEl.value.trim();
+    if(!title){
+      showToast('Missing title', 'Enter a case title before creating the case.', 'error');
+      titleEl.focus();
+      return;
+    }
+    var type = document.getElementById('ncType').value;
+    var priority = document.getElementById('ncPriority').value;
+    var investigator = document.getElementById('ncInvestigator').value;
+    var id = 'CASE-' + (nextCaseNum++);
+    var tbody = document.querySelector('#casesTable tbody');
+    if(tbody){
+      var row = document.createElement('tr');
+      row.innerHTML =
+        '<td class="mono">' + id + '</td>' +
+        '<td>' + escapeHtml(title) + '</td>' +
+        '<td>' + type + '</td>' +
+        '<td><span class="chip ' + priorityChipClass(priority) + '">' + priority + '</span></td>' +
+        '<td>' + investigator + '</td>' +
+        '<td><span class="chip medium">Active</span></td>' +
+        '<td>Today</td><td>Just now</td>';
+      tbody.insertBefore(row, tbody.firstChild);
+    }
+    bumpOpenCaseCounts();
+    newCaseForm.reset();
+    closeModal('caseModal');
+    showToast('Case created', id + ' has been added to Case Management.', 'success');
+  });
+}
+
+/* ---------- Table search + filters ---------- */
+function wireTableFilters(tableId, inputId, selectIds){
+  var table = document.getElementById(tableId);
+  if(!table) return;
+  var input = inputId ? document.getElementById(inputId) : null;
+  var selects = (selectIds || []).map(function(id){ return document.getElementById(id); }).filter(Boolean);
+  function apply(){
+    var q = input ? input.value.trim().toLowerCase() : '';
+    var selVals = selects.map(function(s){ return s.value.trim().toLowerCase(); }).filter(Boolean);
+    table.querySelectorAll('tbody tr').forEach(function(tr){
+      var text = tr.textContent.toLowerCase();
+      var matchesQ = !q || text.indexOf(q) !== -1;
+      var matchesSel = selVals.every(function(v){ return text.indexOf(v) !== -1; });
+      tr.style.display = (matchesQ && matchesSel) ? '' : 'none';
+    });
+  }
+  if(input) input.addEventListener('input', apply);
+  selects.forEach(function(s){ s.addEventListener('change', apply); });
+}
+wireTableFilters('casesTable', 'casesSearch', ['casesPriority','casesStatus','casesType']);
+wireTableFilters('socTable', 'socSearch', ['socSeverity','socStatus']);
+wireTableFilters('evidenceTable', 'evidenceSearch', ['evidenceCase','evidenceType']);
+wireTableFilters('endpointTable', 'endpointSearch', ['endpointStatus']);
+wireTableFilters('assetsTable', 'assetsSearch', ['assetsCriticality','assetsExposure']);
+wireTableFilters('vulnsTable', 'vulnsSearch', ['vulnsSeverity','vulnsStatus']);
+wireTableFilters('identityTable', 'identitySearch', ['identityStatus']);
+wireTableFilters('reportsTable', 'reportsSearch', ['reportsType']);
+
+/* Global header search delegates to the active page's own search box */
+var pageSearchMap = {
+  cases: 'casesSearch', soc: 'socSearch', evidence: 'evidenceSearch', endpoint: 'endpointSearch',
+  assets: 'assetsSearch', vulns: 'vulnsSearch', identity: 'identitySearch', reports: 'reportsSearch'
+};
+var globalSearch = document.getElementById('search');
+if(globalSearch){
+  globalSearch.addEventListener('input', function(){
+    var activePage = document.querySelector('.page.active');
+    if(!activePage) return;
+    var localId = pageSearchMap[activePage.id];
+    if(!localId) return;
+    var localInput = document.getElementById(localId);
+    if(!localInput) return;
+    localInput.value = globalSearch.value;
+    localInput.dispatchEvent(new Event('input'));
+  });
+}
+
+/* ---------- SIEM "run query" (demo — re-filters the visible result table) ---------- */
+var siemRunBtn = document.getElementById('siemRunBtn');
+if(siemRunBtn){
+  siemRunBtn.addEventListener('click', function(){
+    var q = document.getElementById('siemQuery').value.trim();
+    var table = document.getElementById('siemTable');
+    if(table){
+      table.querySelectorAll('tbody tr').forEach(function(tr){
+        var text = tr.textContent.toLowerCase();
+        tr.style.display = (!q || text.indexOf(q.toLowerCase()) !== -1) ? '' : 'none';
+      });
+    }
+    showToast('Query complete', q ? ('Matched events for "' + q + '".') : 'Showing the most recent events.', 'success');
+  });
+}
+
+/* ---------- Chain of Custody — real SHA-256 verification ---------- */
+var custodyChain = [
+  {idx:0, event:"Evidence collected: Disk image WS-FIN-07.E01 (500GB, write-blocked acquisition)", actor:"J. Alvarez - Lead Forensic Examiner", ts:"2026-08-14T09:12:03Z", prev:"GENESIS", hash:"5b7511ca6009bb578c45e1c2038cee09375180fb2df021ad776f34349100580b"},
+  {idx:1, event:"Evidence logged into vault - Rack 3, Bay 12, Shelf B", actor:"Automated Custody System", ts:"2026-08-14T09:47:21Z", prev:"5b7511ca6009bb578c45e1c2038cee09375180fb2df021ad776f34349100580b", hash:"cc7699c4ecbc9b93952ed68444e1379df6451cac59107a0c0e7815a5dca71cce"},
+  {idx:2, event:"Initial SHA-256 integrity hash computed and sealed", actor:"Automated Custody System", ts:"2026-08-14T09:48:55Z", prev:"cc7699c4ecbc9b93952ed68444e1379df6451cac59107a0c0e7815a5dca71cce", hash:"b2939e6ab499cd9062c9783c98625edcc37eeadd8e3718af3aa6b7e7aa4fb0b6"},
+  {idx:3, event:"Evidence checked out for forensic analysis", actor:"M. Chen - Forensic Analyst", ts:"2026-08-15T13:20:11Z", prev:"b2939e6ab499cd9062c9783c98625edcc37eeadd8e3718af3aa6b7e7aa4fb0b6", hash:"de4cf761da890b15905274c21def3ddd66d01b61b9ccb47082a556ca717539e1"},
+  {idx:4, event:"Memory artifact extraction completed, 14 IOCs identified", actor:"M. Chen - Forensic Analyst", ts:"2026-08-16T17:05:44Z", prev:"de4cf761da890b15905274c21def3ddd66d01b61b9ccb47082a556ca717539e1", hash:"c9fc2a83cba3ca35b77482dc2a908996117b75f933a02a4a75f319334b3d9930"},
+  {idx:5, event:"Evidence returned to vault, integrity re-verified", actor:"M. Chen - Forensic Analyst", ts:"2026-08-16T18:30:02Z", prev:"c9fc2a83cba3ca35b77482dc2a908996117b75f933a02a4a75f319334b3d9930", hash:"03ccd736e6919f3eda89813eabec2f32acf57ece613594e151582ec2b130d7aa"},
+  {idx:6, event:"Access granted for legal review", actor:"R. Okafor - Legal Counsel", ts:"2026-08-18T10:00:00Z", prev:"03ccd736e6919f3eda89813eabec2f32acf57ece613594e151582ec2b130d7aa", hash:"d97f45ce0c66450baedc7f0daa4591c24bd78c0ef4f0fbeb21a729efbadb8658"},
+  {idx:7, event:"Chain of custody report generated for court submission", actor:"Centinell Reporting Engine", ts:"2026-08-19T08:15:30Z", prev:"d97f45ce0c66450baedc7f0daa4591c24bd78c0ef4f0fbeb21a729efbadb8658", hash:"2e19418946fecc18cf79b03786b7e18816bb693e00c5e0e820bc290588084b0b"}
+];
+
+function sha256Hex(str){
+  return Promise.resolve().then(function(){
+    var enc = new TextEncoder().encode(str);
+    return crypto.subtle.digest('SHA-256', enc);
+  }).then(function(buf){
+    return Array.prototype.map.call(new Uint8Array(buf), function(b){
+      return b.toString(16).padStart(2,'0');
+    }).join('');
+  });
+}
+
+var verifyChainBtn = document.getElementById('verifyChainBtn');
+if(verifyChainBtn){
+  verifyChainBtn.addEventListener('click', function(){
+    var btn = verifyChainBtn;
+    var original = btn.textContent;
+    btn.textContent = 'Verifying…';
+    btn.disabled = true;
+
+    var chain = custodyChain.slice();
+    var brokenAt = -1;
+
+    function verifyNext(i){
+      if(i >= chain.length){
+        btn.textContent = original;
+        btn.disabled = false;
+        if(brokenAt === -1){
+          showToast('Chain integrity verified', 'All ' + chain.length + ' events recomputed live in your browser and matched — 0 breaks detected.', 'success');
+        } else {
+          showToast('Integrity break detected', 'Recomputed hash did not match at event #' + brokenAt + '.', 'error');
+        }
+        return;
+      }
+      var block = chain[i];
+      var payload = block.idx + '|' + block.event + '|' + block.actor + '|' + block.ts + '|' + block.prev;
+      sha256Hex(payload).then(function(computed){
+        var statusEl = document.getElementById('custStatus' + block.idx);
+        if(computed === block.hash){
+          if(statusEl){ statusEl.textContent = '✓ verified'; statusEl.style.color = 'var(--good)'; }
+        } else {
+          if(statusEl){ statusEl.textContent = '✗ mismatch'; statusEl.style.color = 'var(--bad)'; }
+          if(brokenAt === -1) brokenAt = block.idx;
+        }
+        verifyNext(i + 1);
+      }).catch(function(){
+        btn.textContent = original;
+        btn.disabled = false;
+        showToast('Verification unavailable', 'This browser blocked the Web Crypto API. Web Crypto requires HTTPS (or localhost) — this will work once deployed.', 'error');
+      });
+    }
+    verifyNext(0);
+  });
+}
+
+var custodyCaseSelect = document.getElementById('custodyCase');
+if(custodyCaseSelect){
+  custodyCaseSelect.addEventListener('change', function(){
+    if(custodyCaseSelect.selectedIndex !== 0){
+      showToast('Ledger not loaded', 'This demo includes a fully wired custody ledger for CASE-2031 only.', 'error');
+      custodyCaseSelect.selectedIndex = 0;
+    }
+  });
+}
+
+/* ---------- Centinell AI (BYOK — calls Anthropic directly with your own key) ---------- */
+var claudeApiKey = '';
+var apiKeySaveBtn = document.getElementById('apiKeySaveBtn');
+if(apiKeySaveBtn){
+  apiKeySaveBtn.addEventListener('click', function(){
+    var input = document.getElementById('apiKeyInput');
+    var val = input.value.trim();
+    if(!val){
+      showToast('No key entered', 'Paste your Claude API key first.', 'error');
+      return;
+    }
+    claudeApiKey = val;
+    var status = document.getElementById('aiConnStatus');
+    status.textContent = 'Connected';
+    status.className = 'chip good';
+    showToast('Connected', 'Centinell AI is ready. Your key stays in this browser tab for the session only.', 'success');
+  });
+}
+
+function addAiMessage(text, who){
+  var wrap = document.getElementById('aiMessages');
+  if(!wrap) return null;
+  var div = document.createElement('div');
+  div.className = 'msg ' + (who === 'user' ? 'user' : 'bot');
+  div.textContent = text;
+  wrap.appendChild(div);
+  wrap.scrollTop = wrap.scrollHeight;
+  return div;
+}
+
+function sendAiMessage(rawText){
+  var text = (rawText || '').trim();
+  if(!text) return;
+  if(!claudeApiKey){
+    showToast('Connect your API key', 'Enter and connect your Claude API key above to chat with Centinell AI.', 'error');
+    return;
+  }
+  addAiMessage(text, 'user');
+  var aiInput = document.getElementById('aiInput');
+  if(aiInput) aiInput.value = '';
+  var thinking = addAiMessage('Thinking…', 'bot');
+  var sendBtn = document.getElementById('aiSendBtn');
+  if(sendBtn) sendBtn.disabled = true;
+
+  Promise.resolve().then(function(){
+    return fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-api-key': claudeApiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-5',
+        max_tokens: 1024,
+        system: 'You are Centinell AI, a professional digital forensics and cybersecurity analyst assistant embedded in the Centinell Forensics Enterprise platform. Answer clearly and precisely for a security operations and DFIR audience. Reference standard concepts (chain of custody, MITRE ATT&CK, CVSS, NIST/ISO 27001/SOC 2/PCI DSS/GDPR) where relevant. Default to concise, actionable answers; write a fuller structured report only when asked for one.',
+        messages: [{ role: 'user', content: text }]
+      })
+    });
+  }).then(function(res){
+    return res.json().then(function(data){ return { ok: res.ok, status: res.status, data: data }; });
+  }).then(function(result){
+    if(!result.ok){
+      var msg = (result.data && result.data.error && result.data.error.message) ? result.data.error.message : ('Request failed (' + result.status + ').');
+      thinking.textContent = "I couldn't reach the API: " + msg;
+      showToast('AI request failed', msg, 'error');
+      return;
+    }
+    var blocks = result.data.content || [];
+    var textBlock = null;
+    for(var i=0;i<blocks.length;i++){ if(blocks[i].type === 'text'){ textBlock = blocks[i]; break; } }
+    thinking.textContent = textBlock ? textBlock.text : 'No response text was returned.';
+  }).catch(function(){
+    thinking.textContent = "I couldn't reach the API from this preview. Once this file is deployed to your own domain (GitHub Pages / Railway), this connects directly to Anthropic with your key.";
+    showToast('Connection error', 'The request to the Claude API did not complete.', 'error');
+  }).finally(function(){
+    if(sendBtn) sendBtn.disabled = false;
+  });
+}
+
+var aiSendBtn = document.getElementById('aiSendBtn');
+if(aiSendBtn){
+  aiSendBtn.addEventListener('click', function(){
+    sendAiMessage(document.getElementById('aiInput').value);
+  });
+}
+var aiInputEl = document.getElementById('aiInput');
+if(aiInputEl){
+  aiInputEl.addEventListener('keydown', function(e){
+    if(e.key === 'Enter'){ e.preventDefault(); sendAiMessage(aiInputEl.value); }
+  });
+}
+
+/* Suggested-prompt chips (Centinell AI page + Reports page's AI Report Generator) */
+document.querySelectorAll('[data-ai-prompt]').forEach(function(btn){
+  btn.addEventListener('click', function(){
+    var prompt = btn.getAttribute('data-ai-prompt');
+    showPage('ai');
+    var input = document.getElementById('aiInput');
+    if(input){
+      input.value = prompt;
+      input.focus();
+    }
+  });
+});
+
+/* ---------- Reports — decorative download action ---------- */
+document.querySelectorAll('.download-btn').forEach(function(btn){
+  btn.addEventListener('click', function(){
+    var row = btn.closest('tr');
+    var name = row ? row.children[0].textContent : 'Report';
+    showToast('Preparing export', '"' + name + '" is queued for download in this demo environment.', 'success');
+  });
+});
+
+/* ---------- Settings — save (demo only, no backend persistence) ---------- */
+var saveOrgBtn = document.getElementById('saveOrgBtn');
+if(saveOrgBtn){
+  saveOrgBtn.addEventListener('click', function(){
+    showToast('Settings saved', 'Organization settings updated for this session.', 'success');
+  });
+}
+
+/* ---------- Notifications bell ---------- */
+var notifBtn = document.getElementById('notifBtn');
+if(notifBtn){
+  notifBtn.addEventListener('click', function(){
+    showToast('6 notifications', '3 critical alerts and 3 case updates need review.', undefined);
+  });
+}
+
+/* ---------- Language selector ---------- */
+var langSelect = document.getElementById('lang');
+if(langSelect){
+  langSelect.addEventListener('change', function(){
+    if(langSelect.value === 'es'){
+      showToast('Language', 'Full Spanish interface is coming soon. Centinell AI can already reply in Spanish if you ask it to.', undefined);
+      langSelect.value = 'en';
+    }
+  });
+}
+
+})();
+</script>
+<script src="/app.js" defer></script>
+</body>
+</html>
