@@ -13,6 +13,7 @@ const { z } = require('zod');
 const { query, transaction, withTenant, migrate } = require('./db');
 const { emitSecurityEvent } = require('./security/telemetry');
 const metrics = require('./metrics');
+const { anchorAllTenants } = require('./security/audit-anchor');
 
 const app = express();
 app.disable('x-powered-by');
@@ -155,6 +156,9 @@ async function start() {
   await migrate();
   const port = Number(process.env.PORT || 3000);
   app.listen(port, () => console.log(`Centinell Forensics listening on ${port}`));
+  if (process.env.AUDIT_ANCHOR_URL) {
+    setInterval(() => anchorAllTenants().catch(error => console.error(JSON.stringify({ level:'error', event:'audit.anchor_failed', message:error.message }))), 15 * 60 * 1000).unref();
+  }
 }
 if (require.main === module) start().catch(error => { console.error(error); process.exit(1); });
 module.exports = { app };

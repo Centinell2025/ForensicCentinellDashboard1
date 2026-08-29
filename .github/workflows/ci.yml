@@ -8,6 +8,23 @@ permissions:
 jobs:
   verify:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: centinell
+          POSTGRES_PASSWORD: centinell_test
+          POSTGRES_DB: centinell_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U centinell"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://centinell:centinell_test@localhost:5432/centinell_test
+      JWT_SECRET: ci-only-secret-longer-than-thirty-two-characters
+      NODE_ENV: test
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
