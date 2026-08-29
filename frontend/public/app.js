@@ -48,6 +48,7 @@
     const input = document.getElementById('aiInput'); const messages = document.getElementById('aiMessages');
     const message = input && input.value.trim(); if (!message) return;
     messages.insertAdjacentHTML('beforeend', `<div class="msg user">${escapeHtml(message)}</div>`); input.value = '';
+    if (staticPreview) { const localReply = /chain of custody|custody/i.test(message) ? 'Browser continuity guidance: verify acquisition metadata, SHA-256 integrity, custody actor, timestamp, and the previous event hash. Production case correlation requires the authenticated backend.' : /cve|vulnerab/i.test(message) ? 'Browser continuity guidance: validate the CVE against the affected asset inventory, exposure, exploitability, compensating controls, and patch evidence. Live enrichment requires the authenticated backend.' : 'Browser continuity mode can preserve notes and navigation, but it does not represent a live AI-provider response. Connect the production backend for tenant-scoped forensic analysis.'; messages.insertAdjacentHTML('beforeend', `<div class="msg bot">${escapeHtml(localReply)}</div>`); messages.scrollTop=messages.scrollHeight; return; }
     try { const data = await api('/api/v1/ai/chat', { method:'POST', body:JSON.stringify({ message }) }); messages.insertAdjacentHTML('beforeend', `<div class="msg bot">${escapeHtml(data.reply)}</div>`); }
     catch (e) { messages.insertAdjacentHTML('beforeend', `<div class="msg bot">${escapeHtml(e.message)}</div>`); }
     messages.scrollTop = messages.scrollHeight;
@@ -57,6 +58,7 @@
 
   const caseForm = document.getElementById('newCaseForm');
   if (caseForm) caseForm.addEventListener('submit', async event => {
+    if (staticPreview) return;
     event.preventDefault(); event.stopImmediatePropagation();
     try {
       const data = await api('/api/v1/cases', { method:'POST', body:JSON.stringify({ title:document.getElementById('ncTitle').value, caseType:document.getElementById('ncType').value, priority:document.getElementById('ncPriority').value, description:document.getElementById('ncDesc').value }) });
