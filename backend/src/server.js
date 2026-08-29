@@ -136,6 +136,32 @@ app.get('/api/v1/evidence', requireAuth, asyncRoute(async (req, res) => {
   res.json({ evidence: result.rows });
 }));
 
+const corporateModules = ['ai-operations','operator-support','crm','websites','social-intelligence','call-reviews'];
+const corporateModuleSchema = z.enum(corporateModules);
+const corporateRecordSchema = z.object({
+  fields: z.array(z.string().trim().min(1).max(120)).length(3)
+});
+app.get('/api/v1/corporate/:module', requireAuth, asyncRoute(async (req, res) => {
+  const moduleName = corporateModuleSchema.parse(req.params.module);
+  const result = await withTenant(req.auth.org, client => client.query(`SELECT id,module,fields,updated_at "updatedAt"
+    FROM corporate_records WHERE organization_id=$1 AND module=$2 ORDER BY updated_at DESC LIMIT 500`, [req.auth.org,moduleName]));
+  res.json({ module:moduleName, records:result.rows });
+}));
+app.post('/api/v1/corporate/:module', requireAuth, allow('admin','analyst'), asyncRoute(async (req, res) => {
+  const moduleName = corporateModuleSchema.parse(req.params.module),input=corporateRecordSchema.parse(req.body);
+  const record = await withTenant(req.auth.org, async client => {
+    const result=await client.query(`INSERT INTO corporate_records (organization_id,module,fields,created_by)
+      VALUES ($1,$2,$3,$4) RETURNING id,module,fields,updated_at "updatedAt"`,[req.auth.org,moduleName,JSON.stringify(input.fields),req.auth.sub]);
+    await audit(req,'corporate_record.created','corporate_record',result.rows[0].id,{module:moduleName},client);return result.rows[0];
+  });
+  res.status(201).json({ record });
+}));
+app.delete('/api/v1/corporate/:module/:id', requireAuth, allow('admin','analyst'), asyncRoute(async (req, res) => {
+  const moduleName=corporateModuleSchema.parse(req.params.module),recordId=z.uuid().parse(req.params.id);
+  const removed=await withTenant(req.auth.org,async client=>{const result=await client.query('DELETE FROM corporate_records WHERE id=$1 AND organization_id=$2 AND module=$3 RETURNING id',[recordId,req.auth.org,moduleName]);if(!result.rowCount)return false;await audit(req,'corporate_record.deleted','corporate_record',recordId,{module:moduleName},client);return true});
+  if(!removed)return res.status(404).json({title:'Record not found',status:404});res.status(204).end();
+}));
+
 const analysisQuerySchema = z.object({
   module: z.string().trim().regex(/^[a-z-]{2,40}$/).default('command'),
   metric: z.string().trim().min(2).max(100).default('security-metric')

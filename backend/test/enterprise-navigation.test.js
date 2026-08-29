@@ -16,6 +16,9 @@ test('enterprise frontend includes SPA routing, metric metadata, and technical m
   assert.match(script, /URL\.createObjectURL/);
   assert.match(script, /localStorage\.setItem/);
   assert.match(script, /page\.classList\.toggle\('active'/);
+  assert.match(script, /corporateModules/);
+  assert.match(script, /\/api\/v1\/corporate\//);
+  assert.match(html, /corporate-launch-grid/);
   assert.match(script, /\/api\/v1\/dashboard\/summary/);
   assert.match(script, /\/api\/v1\/analysis/);
   assert.match(html, /id="technicalModal"|technical-modal/);
@@ -28,5 +31,8 @@ test('tenant-scoped dashboard, evidence, and analysis endpoints are declared', (
   assert.match(server, /app\.get\('\/api\/v1\/analysis', requireAuth/);
   assert.match(server, /app\.post\('\/api\/v1\/investigation\/execute', requireAuth/);
   assert.match(server, /withTenant\(req\.auth\.org/);
+  assert.match(server, /app\.get\('\/api\/v1\/corporate\/:module', requireAuth/);
+  assert.match(server, /app\.post\('\/api\/v1\/corporate\/:module', requireAuth/);
+  assert.match(server, /app\.delete\('\/api\/v1\/corporate\/:module\/:id', requireAuth/);
   assert.doesNotMatch(server, /encrypted_data_key "encryptedDataKey"/);
 });

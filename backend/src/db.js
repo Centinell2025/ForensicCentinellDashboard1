@@ -146,6 +146,16 @@ async function migrate() {
       external_reference text NOT NULL,
       anchored_at timestamptz NOT NULL DEFAULT now()
     );
+    CREATE TABLE IF NOT EXISTS corporate_records (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      organization_id uuid NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+      module text NOT NULL CHECK (module IN ('ai-operations','operator-support','crm','websites','social-intelligence','call-reviews')),
+      fields jsonb NOT NULL CHECK (jsonb_typeof(fields)='array' AND jsonb_array_length(fields)=3),
+      created_by uuid NOT NULL REFERENCES users(id),
+      created_at timestamptz NOT NULL DEFAULT now(),
+      updated_at timestamptz NOT NULL DEFAULT now()
+    );
+    CREATE INDEX IF NOT EXISTS corporate_records_tenant_module_idx ON corporate_records (organization_id,module,updated_at DESC);
     CREATE OR REPLACE FUNCTION centinell_audit_hash() RETURNS trigger LANGUAGE plpgsql AS $$
     DECLARE prior text;
     BEGIN
@@ -186,6 +196,8 @@ async function migrate() {
     ALTER TABLE abac_policies FORCE ROW LEVEL SECURITY;
     ALTER TABLE audit_anchors ENABLE ROW LEVEL SECURITY;
     ALTER TABLE audit_anchors FORCE ROW LEVEL SECURITY;
+    ALTER TABLE corporate_records ENABLE ROW LEVEL SECURITY;
+    ALTER TABLE corporate_records FORCE ROW LEVEL SECURITY;
     DROP POLICY IF EXISTS cases_tenant_isolation ON cases;
     CREATE POLICY cases_tenant_isolation ON cases USING (organization_id = nullif(current_setting('app.current_organization_id',true),'')::uuid) WITH CHECK (organization_id = nullif(current_setting('app.current_organization_id',true),'')::uuid);
     DROP POLICY IF EXISTS audit_tenant_isolation ON audit_events;
@@ -198,6 +210,8 @@ async function migrate() {
     CREATE POLICY abac_tenant_isolation ON abac_policies USING (organization_id = nullif(current_setting('app.current_organization_id',true),'')::uuid) WITH CHECK (organization_id = nullif(current_setting('app.current_organization_id',true),'')::uuid);
     DROP POLICY IF EXISTS anchors_tenant_isolation ON audit_anchors;
     CREATE POLICY anchors_tenant_isolation ON audit_anchors USING (organization_id = nullif(current_setting('app.current_organization_id',true),'')::uuid) WITH CHECK (organization_id = nullif(current_setting('app.current_organization_id',true),'')::uuid);
+    DROP POLICY IF EXISTS corporate_records_tenant_isolation ON corporate_records;
+    CREATE POLICY corporate_records_tenant_isolation ON corporate_records USING (organization_id = nullif(current_setting('app.current_organization_id',true),'')::uuid) WITH CHECK (organization_id = nullif(current_setting('app.current_organization_id',true),'')::uuid);
   `);
 }
 
