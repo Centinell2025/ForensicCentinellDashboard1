@@ -99,6 +99,24 @@ app.get('/api/v1/auth/me', requireAuth, asyncRoute(async (req, res) => {
   const u = result.rows[0]; res.json({ user: { id: u.id, email: u.email, fullName: u.full_name, role: u.role, organization: u.organization } });
 }));
 
+const organizationSettingsSchema = z.object({
+  name: z.string().trim().min(2).max(120),
+  timezone: z.string().trim().min(2).max(80).regex(/^[A-Za-z_+\/-]+$/),
+  evidenceRetentionDays: z.number().int().min(1).max(36500),
+  notifications: z.object({ criticalEmail:z.boolean(), p1Sms:z.boolean(), executiveDigest:z.boolean(), complianceReminders:z.boolean() }).default({ criticalEmail:true,p1Sms:true,executiveDigest:true,complianceReminders:false })
+});
+app.get('/api/v1/settings/organization', requireAuth, asyncRoute(async (req, res) => {
+  const result=await query(`SELECT name,timezone,evidence_retention_days "evidenceRetentionDays",notification_preferences notifications
+    FROM organizations WHERE id=$1`,[req.auth.org]);
+  if(!result.rows[0])return res.status(404).json({title:'Organization not found',status:404});res.json({settings:result.rows[0]});
+}));
+app.put('/api/v1/settings/organization', requireAuth, allow('admin'), asyncRoute(async (req, res) => {
+  const input=organizationSettingsSchema.parse(req.body);
+  const settings=await transaction(async client=>{await client.query("SELECT set_config('app.current_organization_id',$1,true)",[req.auth.org]);const result=await client.query(`UPDATE organizations SET name=$1,timezone=$2,evidence_retention_days=$3,notification_preferences=$4
+      WHERE id=$5 RETURNING name,timezone,evidence_retention_days "evidenceRetentionDays",notification_preferences notifications`,[input.name,input.timezone,input.evidenceRetentionDays,JSON.stringify(input.notifications),req.auth.org]);await audit(req,'organization.settings_updated','organization',req.auth.org,{timezone:input.timezone,evidenceRetentionDays:input.evidenceRetentionDays},client);return result.rows[0]});
+  res.json({settings});
+}));
+
 const caseSchema = z.object({ title: z.string().trim().min(3).max(180), caseType: z.string().trim().min(2).max(80), priority: z.enum(['Critical','High','Medium','Low']), description: z.string().trim().max(4000).default('') });
 app.get('/api/v1/cases', requireAuth, asyncRoute(async (req, res) => {
   const result = await withTenant(req.auth.org, client => client.query('SELECT id,case_number "caseNumber",title,case_type "caseType",priority,status,description,created_at "createdAt" FROM cases WHERE organization_id=$1 ORDER BY created_at DESC LIMIT 200', [req.auth.org]));
@@ -134,6 +152,32 @@ app.get('/api/v1/evidence', requireAuth, asyncRoute(async (req, res) => {
     FROM evidence_objects e JOIN cases c ON c.id=e.case_id
     WHERE e.organization_id=$1 ORDER BY e.created_at DESC LIMIT 200`, [req.auth.org]));
   res.json({ evidence: result.rows });
+}));
+
+const corporateModules = ['ai-operations','operator-support','crm','websites','social-intelligence','call-reviews'];
+const corporateModuleSchema = z.enum(corporateModules);
+const corporateRecordSchema = z.object({
+  fields: z.array(z.string().trim().min(1).max(120)).length(3)
+});
+app.get('/api/v1/corporate/:module', requireAuth, asyncRoute(async (req, res) => {
+  const moduleName = corporateModuleSchema.parse(req.params.module);
+  const result = await withTenant(req.auth.org, client => client.query(`SELECT id,module,fields,updated_at "updatedAt"
+    FROM corporate_records WHERE organization_id=$1 AND module=$2 ORDER BY updated_at DESC LIMIT 500`, [req.auth.org,moduleName]));
+  res.json({ module:moduleName, records:result.rows });
+}));
+app.post('/api/v1/corporate/:module', requireAuth, allow('admin','analyst'), asyncRoute(async (req, res) => {
+  const moduleName = corporateModuleSchema.parse(req.params.module),input=corporateRecordSchema.parse(req.body);
+  const record = await withTenant(req.auth.org, async client => {
+    const result=await client.query(`INSERT INTO corporate_records (organization_id,module,fields,created_by)
+      VALUES ($1,$2,$3,$4) RETURNING id,module,fields,updated_at "updatedAt"`,[req.auth.org,moduleName,JSON.stringify(input.fields),req.auth.sub]);
+    await audit(req,'corporate_record.created','corporate_record',result.rows[0].id,{module:moduleName},client);return result.rows[0];
+  });
+  res.status(201).json({ record });
+}));
+app.delete('/api/v1/corporate/:module/:id', requireAuth, allow('admin','analyst'), asyncRoute(async (req, res) => {
+  const moduleName=corporateModuleSchema.parse(req.params.module),recordId=z.uuid().parse(req.params.id);
+  const removed=await withTenant(req.auth.org,async client=>{const result=await client.query('DELETE FROM corporate_records WHERE id=$1 AND organization_id=$2 AND module=$3 RETURNING id',[recordId,req.auth.org,moduleName]);if(!result.rowCount)return false;await audit(req,'corporate_record.deleted','corporate_record',recordId,{module:moduleName},client);return true});
+  if(!removed)return res.status(404).json({title:'Record not found',status:404});res.status(204).end();
 }));
 
 const analysisQuerySchema = z.object({
