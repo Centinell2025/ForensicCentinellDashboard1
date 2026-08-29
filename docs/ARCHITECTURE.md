@@ -35,3 +35,5 @@ Railway is the initial managed deployment target. Kubernetes and Terraform manif
 4. API to approved AI provider with minimal necessary context.
 
 Evidence binaries require a dedicated encrypted object store and signed evidence manifests before production evidence ingestion is enabled.
+
+See `MISSION-CRITICAL-SECURITY.md` for RLS, envelope encryption, WebAuthn/ABAC, cryptographic audit anchoring, SIEM delivery, and DigitalOcean HA activation requirements.

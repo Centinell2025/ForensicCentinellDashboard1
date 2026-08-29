@@ -10,7 +10,8 @@ const rateLimit = require('express-rate-limit');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { z } = require('zod');
-const { query, transaction, migrate } = require('./db');
+const { query, transaction, withTenant, migrate } = require('./db');
+const { emitSecurityEvent } = require('./security/telemetry');
 
 const app = express();
 app.disable('x-powered-by');
@@ -47,7 +48,9 @@ function requireAuth(req, res, next) {
 }
 function allow(...roles) { return (req, res, next) => roles.includes(req.auth.role) ? next() : res.status(403).json({ title: 'Insufficient permission', status: 403 }); }
 async function audit(req, action, entityType, entityId, metadata = {}, client) {
-  await query('INSERT INTO audit_events (organization_id, actor_id, action, entity_type, entity_id, metadata, ip) VALUES ($1,$2,$3,$4,$5,$6,$7)', [req.auth.org, req.auth.sub, action, entityType, entityId, metadata, req.ip], client);
+  const insert = tenantClient => query('INSERT INTO audit_events (organization_id, actor_id, action, entity_type, entity_id, metadata, ip) VALUES ($1,$2,$3,$4,$5,$6,$7)', [req.auth.org, req.auth.sub, action, entityType, entityId, metadata, req.ip], tenantClient);
+  if (client) await insert(client); else await withTenant(req.auth.org, insert);
+  emitSecurityEvent({ organizationId:req.auth.org, actorId:req.auth.sub, action, entityType, entityId, metadata }).catch(error => console.error(JSON.stringify({ level:'error', event:'siem.delivery_failed', message:error.message })));
 }
 function asyncRoute(handler) { return (req, res, next) => Promise.resolve(handler(req, res, next)).catch(next); }
 
@@ -59,6 +62,7 @@ app.post('/api/v1/auth/register', authLimiter, asyncRoute(async (req, res) => {
   const user = await transaction(async client => {
     const org = await client.query('INSERT INTO organizations (name, slug) VALUES ($1,$2) RETURNING id,name', [input.organization, `${slugBase}-${crypto.randomBytes(3).toString('hex')}`]);
     const result = await client.query('INSERT INTO users (organization_id,email,password_hash,full_name,role) VALUES ($1,lower($2),$3,$4,$5) RETURNING id,organization_id,email,full_name,role', [org.rows[0].id, input.email, hash, input.fullName, 'admin']);
+    await client.query("SELECT set_config('app.current_organization_id', $1, true)", [org.rows[0].id]);
     await client.query('INSERT INTO audit_events (organization_id,actor_id,action,entity_type,entity_id) VALUES ($1,$2,$3,$4,$5)', [org.rows[0].id, result.rows[0].id, 'organization.created', 'organization', org.rows[0].id]);
     return { ...result.rows[0], organization_name: org.rows[0].name };
   });
@@ -88,12 +92,13 @@ app.get('/api/v1/auth/me', requireAuth, asyncRoute(async (req, res) => {
 
 const caseSchema = z.object({ title: z.string().trim().min(3).max(180), caseType: z.string().trim().min(2).max(80), priority: z.enum(['Critical','High','Medium','Low']), description: z.string().trim().max(4000).default('') });
 app.get('/api/v1/cases', requireAuth, asyncRoute(async (req, res) => {
-  const result = await query('SELECT id,case_number "caseNumber",title,case_type "caseType",priority,status,description,created_at "createdAt" FROM cases WHERE organization_id=$1 ORDER BY created_at DESC LIMIT 200', [req.auth.org]);
+  const result = await withTenant(req.auth.org, client => client.query('SELECT id,case_number "caseNumber",title,case_type "caseType",priority,status,description,created_at "createdAt" FROM cases WHERE organization_id=$1 ORDER BY created_at DESC LIMIT 200', [req.auth.org]));
   res.json({ cases: result.rows });
 }));
 app.post('/api/v1/cases', requireAuth, allow('admin','analyst'), asyncRoute(async (req, res) => {
   const input = caseSchema.parse(req.body);
   const created = await transaction(async client => {
+    await client.query("SELECT set_config('app.current_organization_id', $1, true)", [req.auth.org]);
     const seq = await client.query("SELECT 'CASE-' || lpad((coalesce(max(substring(case_number from 6)::int),2000)+1)::text,4,'0') value FROM cases WHERE organization_id=$1", [req.auth.org]);
     const result = await client.query('INSERT INTO cases (organization_id,case_number,title,case_type,priority,description,created_by) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING id,case_number "caseNumber",title,case_type "caseType",priority,status,description,created_at "createdAt"', [req.auth.org, seq.rows[0].value, input.title, input.caseType, input.priority, input.description, req.auth.sub]);
     await audit(req, 'case.created', 'case', result.rows[0].id, { caseNumber: result.rows[0].caseNumber }, client);
@@ -103,7 +108,7 @@ app.post('/api/v1/cases', requireAuth, allow('admin','analyst'), asyncRoute(asyn
 }));
 
 app.get('/api/v1/audit', requireAuth, allow('admin','auditor'), asyncRoute(async (req, res) => {
-  const result = await query('SELECT id,action,entity_type "entityType",entity_id "entityId",metadata,created_at "createdAt" FROM audit_events WHERE organization_id=$1 ORDER BY created_at DESC LIMIT 250', [req.auth.org]);
+  const result = await withTenant(req.auth.org, client => client.query('SELECT id,action,entity_type "entityType",entity_id "entityId",metadata,previous_hash "previousHash",event_hash "eventHash",created_at "createdAt" FROM audit_events WHERE organization_id=$1 ORDER BY created_at DESC LIMIT 250', [req.auth.org]));
   res.json({ events: result.rows });
 }));
 
