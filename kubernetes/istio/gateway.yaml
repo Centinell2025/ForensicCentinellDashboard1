@@ -1,0 +1,9 @@
+apiVersion: networking.istio.io/v1
+kind: Gateway
+metadata: { name: centinell-forensics-gateway }
+spec:
+  selector: { istio: ingressgateway }
+  servers:
+    - port: { number: 443, name: https, protocol: HTTPS }
+      tls: { mode: SIMPLE, credentialName: centinell-forensics-tls }
+      hosts: [forensics.example.com]

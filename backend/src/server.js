@@ -12,6 +12,7 @@ const jwt = require('jsonwebtoken');
 const { z } = require('zod');
 const { query, transaction, withTenant, migrate } = require('./db');
 const { emitSecurityEvent } = require('./security/telemetry');
+const metrics = require('./metrics');
 
 const app = express();
 app.disable('x-powered-by');
@@ -24,6 +25,12 @@ app.use(cors({ origin(origin, done) {
 }, credentials: true }));
 app.use(express.json({ limit: '256kb' }));
 app.use(cookieParser());
+app.use((req, res, next) => {
+  const started = Date.now();
+  res.on('finish', () => metrics.increment('centinell_http_requests_total', { method:req.method, status:res.statusCode, route:(req.route && req.route.path) || 'unmatched' }));
+  res.on('finish', () => { if (Date.now()-started > 2000) metrics.increment('centinell_slow_requests_total'); });
+  next();
+});
 
 const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 20, standardHeaders: 'draft-8', legacyHeaders: false });
 const apiLimiter = rateLimit({ windowMs: 60 * 1000, limit: 180, standardHeaders: 'draft-8', legacyHeaders: false });
@@ -128,6 +135,11 @@ app.get('/api/v1/health', asyncRoute(async (_req, res) => {
   res.json({ status: db.rows[0].ok === 1 ? 'ok' : 'degraded', service: 'centinell-forensics-enterprise', timestamp: new Date().toISOString() });
 }));
 app.get('/api/v1/ready', (_req, res) => res.json({ status: 'ready' }));
+app.get('/metrics', (req, res) => {
+  const expected = process.env.METRICS_TOKEN;
+  if (!expected || req.get('authorization') !== `Bearer ${expected}`) return res.status(401).end();
+  res.type('text/plain; version=0.0.4').send(metrics.render());
+});
 
 const frontendPath = path.join(__dirname, '..', '..', 'frontend', 'public');
 app.use(express.static(frontendPath, { extensions: ['html'], maxAge: process.env.NODE_ENV === 'production' ? '1h' : 0 }));

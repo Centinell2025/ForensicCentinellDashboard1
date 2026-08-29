@@ -1,0 +1,12 @@
+apiVersion: networking.istio.io/v1
+kind: DestinationRule
+metadata: { name: centinell-forensics }
+spec:
+  host: centinell-forensics
+  trafficPolicy:
+    tls: { mode: ISTIO_MUTUAL }
+    loadBalancer: { simple: LEAST_REQUEST }
+    outlierDetection:
+      consecutive5xxErrors: 5
+      interval: 10s
+      baseEjectionTime: 30s

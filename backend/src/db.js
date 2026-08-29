@@ -160,14 +160,44 @@ async function migrate() {
     END $$;
     DROP TRIGGER IF EXISTS audit_events_hash_chain ON audit_events;
     CREATE TRIGGER audit_events_hash_chain BEFORE INSERT ON audit_events FOR EACH ROW EXECUTE FUNCTION centinell_audit_hash();
+    CREATE OR REPLACE FUNCTION centinell_verify_audit_chain(target_org uuid) RETURNS boolean LANGUAGE plpgsql AS $$
+    DECLARE item record; prior text := repeat('0',64); expected text;
+    BEGIN
+      FOR item IN SELECT * FROM audit_events WHERE organization_id=target_org ORDER BY id LOOP
+        IF item.previous_hash IS DISTINCT FROM prior THEN RETURN false; END IF;
+        expected := encode(digest(
+          prior || '|' || item.organization_id::text || '|' || coalesce(item.actor_id::text,'') || '|' ||
+          item.action || '|' || item.entity_type || '|' || coalesce(item.entity_id,'') || '|' || item.metadata::text || '|' || item.created_at::text,
+          'sha256'), 'hex');
+        IF item.event_hash IS DISTINCT FROM expected THEN RETURN false; END IF;
+        prior := item.event_hash;
+      END LOOP;
+      RETURN true;
+    END $$;
     ALTER TABLE cases ENABLE ROW LEVEL SECURITY;
     ALTER TABLE cases FORCE ROW LEVEL SECURITY;
     ALTER TABLE audit_events ENABLE ROW LEVEL SECURITY;
     ALTER TABLE audit_events FORCE ROW LEVEL SECURITY;
+    ALTER TABLE evidence_objects ENABLE ROW LEVEL SECURITY;
+    ALTER TABLE evidence_objects FORCE ROW LEVEL SECURITY;
+    ALTER TABLE webauthn_credentials ENABLE ROW LEVEL SECURITY;
+    ALTER TABLE webauthn_credentials FORCE ROW LEVEL SECURITY;
+    ALTER TABLE abac_policies ENABLE ROW LEVEL SECURITY;
+    ALTER TABLE abac_policies FORCE ROW LEVEL SECURITY;
+    ALTER TABLE audit_anchors ENABLE ROW LEVEL SECURITY;
+    ALTER TABLE audit_anchors FORCE ROW LEVEL SECURITY;
     DROP POLICY IF EXISTS cases_tenant_isolation ON cases;
     CREATE POLICY cases_tenant_isolation ON cases USING (organization_id = nullif(current_setting('app.current_organization_id',true),'')::uuid) WITH CHECK (organization_id = nullif(current_setting('app.current_organization_id',true),'')::uuid);
     DROP POLICY IF EXISTS audit_tenant_isolation ON audit_events;
     CREATE POLICY audit_tenant_isolation ON audit_events USING (organization_id = nullif(current_setting('app.current_organization_id',true),'')::uuid) WITH CHECK (organization_id = nullif(current_setting('app.current_organization_id',true),'')::uuid);
+    DROP POLICY IF EXISTS evidence_tenant_isolation ON evidence_objects;
+    CREATE POLICY evidence_tenant_isolation ON evidence_objects USING (organization_id = nullif(current_setting('app.current_organization_id',true),'')::uuid) WITH CHECK (organization_id = nullif(current_setting('app.current_organization_id',true),'')::uuid);
+    DROP POLICY IF EXISTS webauthn_tenant_isolation ON webauthn_credentials;
+    CREATE POLICY webauthn_tenant_isolation ON webauthn_credentials USING (organization_id = nullif(current_setting('app.current_organization_id',true),'')::uuid) WITH CHECK (organization_id = nullif(current_setting('app.current_organization_id',true),'')::uuid);
+    DROP POLICY IF EXISTS abac_tenant_isolation ON abac_policies;
+    CREATE POLICY abac_tenant_isolation ON abac_policies USING (organization_id = nullif(current_setting('app.current_organization_id',true),'')::uuid) WITH CHECK (organization_id = nullif(current_setting('app.current_organization_id',true),'')::uuid);
+    DROP POLICY IF EXISTS anchors_tenant_isolation ON audit_anchors;
+    CREATE POLICY anchors_tenant_isolation ON audit_anchors USING (organization_id = nullif(current_setting('app.current_organization_id',true),'')::uuid) WITH CHECK (organization_id = nullif(current_setting('app.current_organization_id',true),'')::uuid);
   `);
 }
 

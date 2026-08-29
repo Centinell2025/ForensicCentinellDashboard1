@@ -1,0 +1,6 @@
+apiVersion: security.istio.io/v1
+kind: PeerAuthentication
+metadata: { name: centinell-forensics-strict }
+spec:
+  selector: { matchLabels: { app: centinell-forensics } }
+  mtls: { mode: STRICT }

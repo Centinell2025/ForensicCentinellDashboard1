@@ -2,6 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const crypto = require('crypto');
 const { encryptEvidence, decryptEvidence } = require('../src/security/envelope');
+const { authorize } = require('../src/security/abac');
 
 test('evidence envelope encryption round-trips and detects tampering', async () => {
   const masterKey = crypto.randomBytes(32);
@@ -24,4 +25,14 @@ test('evidence envelope encryption round-trips and detects tampering', async () 
   assert.deepEqual(await decryptEvidence(encrypted, kms, { tenant:'test' }), plaintext);
   encrypted.authTag[0] ^= 1;
   await assert.rejects(() => decryptEvidence(encrypted, kms, { tenant:'test' }));
+});
+
+test('ABAC deny overrides allow and enforces MFA/device context', () => {
+  const policies = [
+    { effect:'allow', action_pattern:'case.*', conditions:{ roles:['analyst'], mfaRequired:true, deviceTrusted:true }, enabled:true },
+    { effect:'deny', action_pattern:'case.delete', conditions:{}, enabled:true }
+  ];
+  assert.equal(authorize(policies, 'case.read', { role:'analyst', mfaVerified:true, deviceTrusted:true }), true);
+  assert.equal(authorize(policies, 'case.read', { role:'analyst', mfaVerified:false, deviceTrusted:true }), false);
+  assert.equal(authorize(policies, 'case.delete', { role:'analyst', mfaVerified:true, deviceTrusted:true }), false);
 });

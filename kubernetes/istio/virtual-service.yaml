@@ -1,0 +1,11 @@
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata: { name: centinell-forensics }
+spec:
+  hosts: [forensics.example.com]
+  gateways: [centinell-forensics-gateway]
+  http:
+    - route:
+        - destination: { host: centinell-forensics, port: { number: 80 } }
+      retries: { attempts: 2, perTryTimeout: 3s, retryOn: reset,connect-failure,5xx }
+      timeout: 15s
