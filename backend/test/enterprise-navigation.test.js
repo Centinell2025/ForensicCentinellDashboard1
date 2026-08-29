@@ -11,6 +11,11 @@ test('enterprise frontend includes SPA routing, metric metadata, and technical m
   assert.match(script, /history\.pushState/);
   assert.match(script, /dataset\.metric/);
   assert.match(script, /centinell:metric-selected/);
+  assert.match(script, /wireRecordRows/);
+  assert.match(script, /record-navigable/);
+  assert.match(script, /URL\.createObjectURL/);
+  assert.match(script, /localStorage\.setItem/);
+  assert.match(script, /page\.classList\.toggle\('active'/);
   assert.match(script, /\/api\/v1\/dashboard\/summary/);
   assert.match(script, /\/api\/v1\/analysis/);
   assert.match(html, /id="technicalModal"|technical-modal/);
