@@ -123,8 +123,9 @@ app.get('/api/v1/health', asyncRoute(async (_req, res) => {
 }));
 app.get('/api/v1/ready', (_req, res) => res.json({ status: 'ready' }));
 
-app.use(express.static(path.join(__dirname, '..', 'public'), { extensions: ['html'], maxAge: process.env.NODE_ENV === 'production' ? '1h' : 0 }));
-app.get('/{*splat}', (_req, res) => res.sendFile(path.join(__dirname, '..', 'public', 'index.html')));
+const frontendPath = path.join(__dirname, '..', '..', 'frontend', 'public');
+app.use(express.static(frontendPath, { extensions: ['html'], maxAge: process.env.NODE_ENV === 'production' ? '1h' : 0 }));
+app.get('/{*splat}', (_req, res) => res.sendFile(path.join(frontendPath, 'index.html')));
 app.use((error, _req, res, _next) => {
   if (error instanceof z.ZodError) return res.status(400).json({ title: 'Validation failed', status: 400, errors: error.issues.map(i => ({ path: i.path.join('.'), message: i.message })) });
   if (error.code === '23505') return res.status(409).json({ title: 'That account or record already exists', status: 409 });

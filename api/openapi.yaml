@@ -1,0 +1,70 @@
+openapi: 3.1.0
+info:
+  title: Centinell Forensics Enterprise API
+  version: 1.1.0
+  description: Tenant-isolated DFIR case, audit, authentication, and AI API.
+servers:
+  - url: /api/v1
+paths:
+  /health:
+    get:
+      summary: Database-backed health check
+      responses:
+        '200': { description: Healthy }
+  /auth/register:
+    post:
+      summary: Create an organization and its first administrator
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/Register' }
+      responses:
+        '201': { description: Organization created }
+        '400': { $ref: '#/components/responses/Problem' }
+  /auth/login:
+    post:
+      summary: Start a secure HTTP-only session
+      responses:
+        '200': { description: Authenticated }
+        '401': { $ref: '#/components/responses/Problem' }
+  /cases:
+    get:
+      summary: List cases for the authenticated tenant
+      security: [{ cookieAuth: [] }]
+      responses:
+        '200': { description: Tenant case list }
+    post:
+      summary: Create a tenant case
+      security: [{ cookieAuth: [] }]
+      responses:
+        '201': { description: Case created }
+        '403': { $ref: '#/components/responses/Problem' }
+  /audit:
+    get:
+      summary: List tenant audit events
+      security: [{ cookieAuth: [] }]
+      responses:
+        '200': { description: Audit event list }
+components:
+  securitySchemes:
+    cookieAuth: { type: apiKey, in: cookie, name: centinell_session }
+  schemas:
+    Register:
+      type: object
+      required: [organization, fullName, email, password]
+      properties:
+        organization: { type: string, minLength: 2, maxLength: 120 }
+        fullName: { type: string, minLength: 2, maxLength: 120 }
+        email: { type: string, format: email }
+        password: { type: string, minLength: 12, maxLength: 128 }
+  responses:
+    Problem:
+      description: RFC 7807-style problem response
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              title: { type: string }
+              status: { type: integer }

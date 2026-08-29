@@ -1,0 +1,26 @@
+services:
+  app:
+    build: .
+    ports: ["3000:3000"]
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: postgresql://centinell:centinell@db:5432/centinell
+      JWT_SECRET: local-development-secret-change-before-production
+    depends_on:
+      db:
+        condition: service_healthy
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: centinell
+      POSTGRES_PASSWORD: centinell
+      POSTGRES_DB: centinell
+    volumes: ["centinell_data:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U centinell"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+volumes:
+  centinell_data:

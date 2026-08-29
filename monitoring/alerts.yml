@@ -1,0 +1,9 @@
+groups:
+  - name: centinell-availability
+    rules:
+      - alert: CentinellForensicsDown
+        expr: up{job="centinell-forensics"} == 0
+        for: 2m
+        labels: { severity: critical }
+        annotations:
+          summary: Centinell Forensics is unavailable

@@ -1,8 +1,8 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 test('required deployment files are loadable', () => {
-  const pkg = require('../package.json');
-  const railway = require('../railway.json');
+  const pkg = require('../../package.json');
+  const railway = require('../../railway.json');
   assert.equal(pkg.engines.node, '>=20');
   assert.equal(railway.deploy.healthcheckPath, '/api/v1/health');
 });

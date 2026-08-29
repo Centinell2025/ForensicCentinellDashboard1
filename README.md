@@ -2,7 +2,18 @@
 
 Copyright © 2026 Beacon of the Eagle LLC. All Rights Reserved. This is proprietary software; see `COPYRIGHT.md`.
 
-Production-oriented, multi-tenant DFIR and cybersecurity case-management SaaS by Beacon of the Eagle. The existing dashboard design is preserved and backed by a secure Node.js API and PostgreSQL.
+Production-oriented, multi-tenant DFIR and cybersecurity case-management SaaS by Beacon of the Eagle. The monorepo separates the customer frontend, secure Node.js API, PostgreSQL persistence, infrastructure, observability, and deployment automation.
+
+## Enterprise architecture
+
+- `frontend/public` — customer interface and secure account experience
+- `backend/src` — REST API, authentication, authorization, tenancy, audit, and AI gateway
+- `api` — OpenAPI contract
+- `monitoring` — Prometheus scrape and alert rules
+- `kubernetes` — deployment, service, ingress, autoscaling, and disruption controls
+- `terraform` — reproducible Kubernetes namespace and configuration
+- `.github/workflows` — continuous integration and security scanning
+- `docs` — architecture, launch, operations, and security guidance
 
 ## Working capabilities
 
