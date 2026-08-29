@@ -22,6 +22,12 @@ test('enterprise frontend includes SPA routing, metric metadata, and technical m
   assert.match(script, /command\/support-center/);
   assert.match(script, /command\/crm-integration/);
   assert.match(script, /commandModuleHost/);
+  assert.match(script, /corporateViews/);
+  assert.match(script, /data-run-correlation/);
+  assert.match(script, /data-seal-evidence/);
+  assert.match(script, /sha256Text/);
+  assert.match(script, /data-report-kind/);
+  assert.match(script, /data-module-settings/);
   assert.match(script, /\/api\/v1\/corporate\//);
   assert.match(html, /corporate-launch-grid/);
   assert.match(script, /\/api\/v1\/dashboard\/summary/);
