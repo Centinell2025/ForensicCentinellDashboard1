@@ -59,3 +59,14 @@ test('frontend architecture separates router, store, API, lifecycle, cache, and 
   assert.match(fs.readFileSync(path.join(root, 'frontend/public/utils/performance.js'), 'utf8'), /debounce|throttle/);
   assert.match(fs.readFileSync(path.join(root, 'frontend/public/ui/runtime-components.js'), 'utf8'), /applyRBAC|Export CSV|global\.print/);
 });
+
+test('reviewer guide documents test, RLS, offline, security, and accessibility review', () => {
+  const guide = fs.readFileSync(path.join(root, 'docs/REVIEWERS-GUIDE.md'), 'utf8');
+  assert.match(guide, /Test coverage matrix/);
+  assert.match(guide, /sequenceDiagram/);
+  assert.match(guide, /FORCE ROW LEVEL SECURITY/);
+  assert.match(guide, /flowchart TD/);
+  assert.match(guide, /npm run security-scan/);
+  assert.match(guide, /Accessibility compliance log/);
+  assert.match(guide, /not queued or replayed automatically/i);
+});
