@@ -8,7 +8,7 @@ const root = path.join(__dirname, '..', '..');
 test('enterprise frontend includes SPA routing, metric metadata, and technical modal', () => {
   const script = fs.readFileSync(path.join(root, 'frontend/public/enterprise-dashboard.js'), 'utf8');
   const html = fs.readFileSync(path.join(root, 'frontend/public/index.html'), 'utf8');
-  assert.match(script, /'replaceState':'pushState'/);
+  assert.match(script, /CentinellRouter\.navigate/);
   assert.match(script, /dataset\.metric/);
   assert.match(script, /centinell:metric-selected/);
   assert.match(script, /wireRecordRows/);
@@ -46,4 +46,16 @@ test('tenant-scoped dashboard, evidence, and analysis endpoints are declared', (
   assert.match(server, /app\.post\('\/api\/v1\/corporate\/:module', requireAuth/);
   assert.match(server, /app\.delete\('\/api\/v1\/corporate\/:module\/:id', requireAuth/);
   assert.doesNotMatch(server, /encrypted_data_key "encryptedDataKey"/);
+});
+
+test('frontend architecture separates router, store, API, lifecycle, cache, and runtime UI', () => {
+  const files = ['router/hash-router.js','state/centinell-store.js','services/api-client.js','services/local-data.js','core/lifecycle.js','utils/performance.js','ui/runtime-components.js'];
+  files.forEach(file => assert.ok(fs.existsSync(path.join(root, 'frontend/public', file)), `${file} must exist`));
+  assert.match(fs.readFileSync(path.join(root, 'frontend/public/router/hash-router.js'), 'utf8'), /URLSearchParams|hashchange/);
+  assert.match(fs.readFileSync(path.join(root, 'frontend/public/state/centinell-store.js'), 'utf8'), /CentinellStore/);
+  assert.match(fs.readFileSync(path.join(root, 'frontend/public/services/api-client.js'), 'utf8'), /AbortController/);
+  assert.match(fs.readFileSync(path.join(root, 'frontend/public/services/local-data.js'), 'utf8'), /indexedDB/);
+  assert.match(fs.readFileSync(path.join(root, 'frontend/public/core/lifecycle.js'), 'utf8'), /destroyAll/);
+  assert.match(fs.readFileSync(path.join(root, 'frontend/public/utils/performance.js'), 'utf8'), /debounce|throttle/);
+  assert.match(fs.readFileSync(path.join(root, 'frontend/public/ui/runtime-components.js'), 'utf8'), /applyRBAC|Export CSV|global\.print/);
 });
