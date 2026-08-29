@@ -18,7 +18,8 @@ app.set('trust proxy', 1);
 app.use(helmet({ contentSecurityPolicy: false, crossOriginEmbedderPolicy: false }));
 app.use(cors({ origin(origin, done) {
   const allowed = (process.env.ALLOWED_ORIGINS || '').split(',').map(v => v.trim()).filter(Boolean);
-  done(null, !origin || !allowed.length || allowed.includes(origin));
+  const permitted = !origin || allowed.includes(origin) || (process.env.NODE_ENV !== 'production' && !allowed.length);
+  done(permitted ? null : new Error('Origin is not allowed'), permitted);
 }, credentials: true }));
 app.use(express.json({ limit: '256kb' }));
 app.use(cookieParser());

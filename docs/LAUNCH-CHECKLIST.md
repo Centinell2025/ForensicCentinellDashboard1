@@ -16,3 +16,7 @@
 ## Safe first release
 
 Use a controlled pilot with synthetic data. Promote to general availability only after the database backup/restore and cross-tenant authorization tests pass.
+
+## Verification record
+
+Record the date, operator, environment, commit SHA, database backup identifier, restore-test evidence, test results, security-review reference, and deployment URL for every production release. A checkbox without supporting evidence is not a completed control.
