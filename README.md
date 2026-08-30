@@ -1,6 +1,6 @@
 # Centinell Forensics Enterprise
 
-Copyright © 2026 Beacon of the Eagle LLC. All Rights Reserved. This is proprietary software; see `COPYRIGHT.md`.
+Copyright © 2026 Beacon of the Eagle LLC. All Rights Reserved. This is proprietary software; see [`LICENSE`](LICENSE) and [`COPYRIGHT.md`](COPYRIGHT.md).
 
 Production-oriented, multi-tenant DFIR and cybersecurity case-management SaaS by Beacon of the Eagle. The monorepo separates the customer frontend, secure Node.js API, PostgreSQL persistence, infrastructure, observability, and deployment automation.
 
