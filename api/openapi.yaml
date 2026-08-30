@@ -70,6 +70,84 @@ paths:
       responses:
         '200': { description: Tenant-scoped technical analysis }
         '401': { $ref: '#/components/responses/Problem' }
+  /advisor-directive:
+    get:
+      summary: Return the authenticated user's tenant or case-scoped forensic directive
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - { name: caseId, in: query, schema: { type: string, format: uuid, nullable: true } }
+      responses:
+        '200':
+          description: Current directive or the immutable default fallback
+          content:
+            application/json: { schema: { $ref: '#/components/schemas/AdvisorDirective' } }
+        '401': { $ref: '#/components/responses/Problem' }
+    put:
+      summary: Save the authenticated user's tenant or case-scoped forensic directive
+      description: The full value is stored and the update is hash-chained in the tenant audit stream; external audit anchoring remains best-effort and scheduled by the existing audit-anchor worker.
+      security: [{ cookieAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [directive]
+              properties:
+                directive: { type: string, minLength: 1, maxLength: 12000 }
+                caseId: { type: string, format: uuid, nullable: true }
+      responses:
+        '200':
+          description: Directive saved and audited
+          content:
+            application/json: { schema: { $ref: '#/components/schemas/AdvisorDirective' } }
+        '400': { $ref: '#/components/responses/Problem' }
+        '403': { $ref: '#/components/responses/Problem' }
+  /forensic-findings:
+    get:
+      summary: List normalized tenant-scoped forensic findings for copilot context
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - { name: caseId, in: query, schema: { type: string, format: uuid, nullable: true } }
+      responses:
+        '200':
+          description: Verified and pending-verification findings without evidence payloads
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  findings: { type: array, items: { $ref: '#/components/schemas/ForensicFinding' } }
+        '401': { $ref: '#/components/responses/Problem' }
+  /reports/drafts:
+    get:
+      summary: List AI report drafts requiring human verification
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - { name: caseId, in: query, schema: { type: string, format: uuid, nullable: true } }
+      responses:
+        '200': { description: Tenant-scoped report drafts }
+        '401': { $ref: '#/components/responses/Problem' }
+    post:
+      summary: Persist an AI response as a pending-verification report draft
+      description: The API always assigns pending_verification and never accepts a client-supplied confirmed status.
+      security: [{ cookieAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [body]
+              properties:
+                title: { type: string, maxLength: 180 }
+                body: { type: string, minLength: 1, maxLength: 30000 }
+                caseId: { type: string, format: uuid, nullable: true }
+                citedFindingIds: { type: array, maxItems: 100, items: { type: string, format: uuid } }
+      responses:
+        '201': { description: Pending-verification report draft created }
+        '400': { $ref: '#/components/responses/Problem' }
+        '403': { $ref: '#/components/responses/Problem' }
   /investigation/execute:
     post:
       summary: Execute an allowlisted defensive investigation operation
@@ -101,6 +179,29 @@ components:
         fullName: { type: string, minLength: 2, maxLength: 120 }
         email: { type: string, format: email }
         password: { type: string, minLength: 12, maxLength: 128 }
+    AdvisorDirective:
+      type: object
+      required: [directive, isDefault]
+      properties:
+        directive: { type: string, maxLength: 12000 }
+        isDefault: { type: boolean }
+        caseId: { type: string, format: uuid, nullable: true }
+        updatedAt: { type: string, format: date-time, nullable: true }
+    ForensicFinding:
+      type: object
+      required: [id, source, status, title]
+      properties:
+        id: { type: string, format: uuid }
+        caseId: { type: string, format: uuid, nullable: true }
+        source: { type: string, enum: [hayabusa, oletools, pdfid, exiftool, email] }
+        status: { type: string, enum: [pending_verification, verified] }
+        title: { type: string }
+        summary: { type: string }
+        artifactId: { type: string }
+        artifactSha256: { type: string }
+        toolVersion: { type: string }
+        createdAt: { type: string, format: date-time }
+        verifiedAt: { type: string, format: date-time, nullable: true }
   responses:
     Problem:
       description: RFC 7807-style problem response

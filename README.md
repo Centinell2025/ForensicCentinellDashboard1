@@ -6,7 +6,7 @@ Production-oriented, multi-tenant DFIR and cybersecurity case-management SaaS by
 
 ## Enterprise architecture
 
-- `frontend/public` — customer interface and secure account experience
+- repository root — GitHub Pages SPA and customer interface
 - `backend/src` — REST API, authentication, authorization, tenancy, audit, and AI gateway
 - `api` — OpenAPI contract
 - `monitoring` — Prometheus scrape and alert rules
@@ -22,7 +22,7 @@ Production-oriented, multi-tenant DFIR and cybersecurity case-management SaaS by
 - Tenant-isolated case creation and retrieval
 - Role enforcement for administrators, analysts, auditors, and viewers
 - Immutable-style audit event trail for material actions
-- Server-side Centinell AI gateway (no customer API keys in the browser)
+- Centinell AI forensic copilot with browser-side BYOK; the user's Anthropic key is sent only to Anthropic
 - Health checks, validation, rate limits, container build, and Railway configuration
 
 ## Deploy on Railway

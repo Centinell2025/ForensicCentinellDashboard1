@@ -10,4 +10,4 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY --chown=centinell:centinell . .
 USER centinell
 EXPOSE 3000
-CMD ["node","src/server.js"]
+CMD ["node","backend/src/server.js"]

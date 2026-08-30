@@ -13,8 +13,9 @@ const { z } = require('zod');
 const { query, transaction, withTenant, migrate } = require('./db');
 const { emitSecurityEvent } = require('./security/telemetry');
 const metrics = require('./metrics');
-const { anchorAllTenants } = require('./security/audit-anchor');
+const { anchorAllTenants, anchorTenant } = require('./security/audit-anchor');
 const { COMMANDS, classifyIndicator, virusTotalLookup, taxiiLookup, packetSummary } = require('./security/investigation-console');
+const { DEFAULT_ADVISOR_DIRECTIVE, CENTINELL_AI_MODEL, normalizeFinding } = require('../../forensic-advisor');
 
 const app = express();
 app.disable('x-powered-by');
@@ -77,6 +78,17 @@ async function audit(req, action, entityType, entityId, metadata = {}, client) {
   emitSecurityEvent({ organizationId:req.auth.org, actorId:req.auth.sub, action, entityType, entityId, metadata }).catch(error => console.error(JSON.stringify({ level:'error', event:'siem.delivery_failed', message:error.message })));
 }
 function asyncRoute(handler) { return (req, res, next) => Promise.resolve(handler(req, res, next)).catch(next); }
+function httpError(status, title) { const error = new Error(title); error.status = status; return error; }
+function optionalUuid(value) { return value == null || String(value).trim() === '' ? null : z.uuid().parse(String(value)); }
+function requestAuditAnchor(organizationId) {
+  if (!process.env.AUDIT_ANCHOR_URL) return;
+  anchorTenant(organizationId).catch(error => console.error(JSON.stringify({ level:'error', event:'audit.anchor_failed', message:error.message })));
+}
+async function assertCaseTenant(client, organizationId, caseId) {
+  if (!caseId) return;
+  const result = await client.query('SELECT id FROM cases WHERE id=$1 AND organization_id=$2', [caseId, organizationId]);
+  if (!result.rowCount) throw httpError(404, 'Case is not available in this tenant');
+}
 
 const registerSchema = z.object({ organization: z.string().trim().min(2).max(120), fullName: z.string().trim().min(2).max(120), email: z.email().max(254), password: z.string().min(12).max(128) });
 app.post('/api/v1/auth/register', authLimiter, asyncRoute(async (req, res) => {
@@ -275,11 +287,116 @@ app.get('/api/v1/audit', requireAuth, allow('admin','auditor'), asyncRoute(async
   res.json({ events: result.rows });
 }));
 
+const findingProjection = `SELECT f.id,f.case_id "caseId",f.source,f.status,f.title,f.summary,
+  f.artifact_id "artifactId",f.artifact_sha256 "artifactSha256",f.tool_version "toolVersion",
+  f.created_at "createdAt",f.verified_at "verifiedAt" FROM forensic_findings f`;
+const advisorDirectiveSchema = z.object({ directive: z.string().trim().min(1).max(12000), caseId: z.uuid().nullable().optional() });
+const reportDraftSchema = z.object({
+  title: z.string().trim().min(3).max(180).default('Centinell AI Forensic Draft'),
+  body: z.string().trim().min(1).max(30000),
+  caseId: z.uuid().nullable().optional(),
+  citedFindingIds: z.array(z.uuid()).max(100).default([])
+});
+
+app.get('/api/v1/advisor-directive', requireAuth, asyncRoute(async (req, res) => {
+  const caseId = optionalUuid(req.query.caseId);
+  const result = await withTenant(req.auth.org, client => client.query(`
+    SELECT directive,case_id "caseId",updated_at "updatedAt"
+    FROM advisor_directives
+    WHERE organization_id=$1 AND user_id=$2 AND (case_id=$3 OR case_id IS NULL)
+    ORDER BY (case_id=$3) DESC, updated_at DESC LIMIT 1`, [req.auth.org, req.auth.sub, caseId]));
+  const row = result.rows[0];
+  res.json({ directive: row ? row.directive : DEFAULT_ADVISOR_DIRECTIVE, isDefault: !row, caseId: row ? row.caseId : caseId, updatedAt: row ? row.updatedAt : null });
+}));
+
+app.put('/api/v1/advisor-directive', requireAuth, allow('admin','analyst'), asyncRoute(async (req, res) => {
+  const input = advisorDirectiveSchema.parse(req.body);
+  const caseId = input.caseId || null;
+  const saved = await transaction(async client => {
+    await client.query("SELECT set_config('app.current_organization_id',$1,true)", [req.auth.org]);
+    await assertCaseTenant(client, req.auth.org, caseId);
+    const existing = await client.query(`SELECT id FROM advisor_directives
+      WHERE organization_id=$1 AND user_id=$2 AND case_id IS NOT DISTINCT FROM $3::uuid FOR UPDATE`, [req.auth.org, req.auth.sub, caseId]);
+    const result = existing.rowCount
+      ? await client.query(`UPDATE advisor_directives SET directive=$1,updated_at=now()
+          WHERE id=$2 RETURNING id,directive,case_id "caseId",updated_at "updatedAt"`, [input.directive, existing.rows[0].id])
+      : await client.query(`INSERT INTO advisor_directives(organization_id,user_id,case_id,directive)
+          VALUES($1,$2,$3,$4) RETURNING id,directive,case_id "caseId",updated_at "updatedAt"`, [req.auth.org, req.auth.sub, caseId, input.directive]);
+    const row = result.rows[0];
+    await audit(req, 'ai.advisor_directive.updated', 'advisor_directive', row.id, {
+      caseId: row.caseId,
+      directive: input.directive,
+      directiveSha256: crypto.createHash('sha256').update(input.directive, 'utf8').digest('hex'),
+      directiveLength: input.directive.length
+    }, client);
+    return row;
+  });
+  requestAuditAnchor(req.auth.org);
+  res.json({ directive: saved.directive, isDefault: false, caseId: saved.caseId, updatedAt: saved.updatedAt });
+}));
+
+app.get('/api/v1/forensic-findings', requireAuth, asyncRoute(async (req, res) => {
+  const caseId = optionalUuid(req.query.caseId);
+  const result = await withTenant(req.auth.org, client => client.query(`${findingProjection}
+    WHERE f.organization_id=$1 AND ($2::uuid IS NULL OR f.case_id=$2)
+    ORDER BY f.created_at DESC LIMIT 500`, [req.auth.org, caseId]));
+  res.json({ findings: result.rows.map(normalizeFinding) });
+}));
+
+app.get('/api/v1/reports/drafts', requireAuth, asyncRoute(async (req, res) => {
+  const caseId = optionalUuid(req.query.caseId);
+  const result = await withTenant(req.auth.org, client => client.query(`
+    SELECT d.id,d.title,d.body,d.source,d.status,d.case_id "caseId",c.case_number "caseNumber",
+      d.cited_finding_ids "citedFindingIds",d.context_snapshot "contextSnapshot",d.created_at "createdAt"
+    FROM report_drafts d LEFT JOIN cases c ON c.id=d.case_id
+    WHERE d.organization_id=$1 AND ($2::uuid IS NULL OR d.case_id=$2)
+    ORDER BY d.created_at DESC LIMIT 100`, [req.auth.org, caseId]));
+  res.json({ drafts: result.rows });
+}));
+
+app.post('/api/v1/reports/drafts', requireAuth, allow('admin','analyst','auditor'), asyncRoute(async (req, res) => {
+  const input = reportDraftSchema.parse(req.body);
+  const caseId = input.caseId || null;
+  const citedFindingIds = [...new Set(input.citedFindingIds || [])];
+  const draft = await transaction(async client => {
+    await client.query("SELECT set_config('app.current_organization_id',$1,true)", [req.auth.org]);
+    await assertCaseTenant(client, req.auth.org, caseId);
+    const findings = citedFindingIds.length
+      ? await client.query(`${findingProjection}
+          WHERE f.organization_id=$1 AND f.id=ANY($2::uuid[])
+            AND ($3::uuid IS NULL OR f.case_id=$3)`, [req.auth.org, citedFindingIds, caseId])
+      : { rows: [] };
+    if (findings.rows.length !== citedFindingIds.length) throw httpError(400, 'One or more cited findings are not available in this tenant or case');
+    const contextSnapshot = findings.rows.map(normalizeFinding);
+    const inserted = await client.query(`INSERT INTO report_drafts
+      (organization_id,case_id,created_by,title,body,status,cited_finding_ids,context_snapshot)
+      VALUES($1,$2,$3,$4,$5,'pending_verification',$6,$7)
+      RETURNING id,title,body,source,status,case_id "caseId",cited_finding_ids "citedFindingIds",
+        context_snapshot "contextSnapshot",created_at "createdAt"`,
+      [req.auth.org, caseId, req.auth.sub, input.title, input.body, citedFindingIds, JSON.stringify(contextSnapshot)]);
+    const row = inserted.rows[0];
+    if (caseId) {
+      const caseResult = await client.query('SELECT case_number "caseNumber" FROM cases WHERE id=$1 AND organization_id=$2', [caseId, req.auth.org]);
+      row.caseNumber = caseResult.rows[0] ? caseResult.rows[0].caseNumber : null;
+    } else row.caseNumber = null;
+    await audit(req, 'ai.report_draft.created', 'report_draft', row.id, {
+      source: 'centinell_ai',
+      status: 'pending_verification',
+      caseId,
+      citedFindingIds,
+      bodySha256: crypto.createHash('sha256').update(input.body, 'utf8').digest('hex')
+    }, client);
+    return row;
+  });
+  requestAuditAnchor(req.auth.org);
+  res.status(201).json({ draft });
+}));
+
 const aiSchema = z.object({ message: z.string().trim().min(2).max(6000) });
 app.post('/api/v1/ai/chat', requireAuth, asyncRoute(async (req, res) => {
   const { message } = aiSchema.parse(req.body);
   if (!process.env.ANTHROPIC_API_KEY) return res.status(503).json({ title: 'AI service is not configured', status: 503 });
-  const response = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', headers: { 'content-type':'application/json', 'x-api-key':process.env.ANTHROPIC_API_KEY, 'anthropic-version':'2023-06-01' }, body: JSON.stringify({ model:'claude-sonnet-4-20250514', max_tokens:1200, system:'You are Centinell AI, a careful DFIR assistant. Never claim evidence that is not supplied. Flag legal conclusions for human review.', messages:[{ role:'user', content:message }] }) });
+  const response = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', headers: { 'content-type':'application/json', 'x-api-key':process.env.ANTHROPIC_API_KEY, 'anthropic-version':'2023-06-01' }, body: JSON.stringify({ model:CENTINELL_AI_MODEL, max_tokens:1200, system:DEFAULT_ADVISOR_DIRECTIVE, messages:[{ role:'user', content:message }] }) });
   if (!response.ok) return res.status(502).json({ title: 'AI provider request failed', status: 502 });
   const data = await response.json();
   await audit(req, 'ai.requested', 'ai_session', null, { characters: message.length });
@@ -297,11 +414,16 @@ app.get('/metrics', (req, res) => {
   res.type('text/plain; version=0.0.4').send(metrics.render());
 });
 
-const frontendPath = path.join(__dirname, '..', '..', 'frontend', 'public');
-app.use(express.static(frontendPath, { extensions: ['html'], maxAge: process.env.NODE_ENV === 'production' ? '1h' : 0 }));
+const frontendPath = path.join(__dirname, '..', '..');
+const publicStatic = express.static(frontendPath, { extensions: ['html'], maxAge: process.env.NODE_ENV === 'production' ? '1h' : 0 });
+const publicRootFiles = new Set(['/','/index.html','/technical-analysis','/technical-analysis.html','/app.js','/card-navigation.js','/enterprise-dashboard.js','/forensic-advisor.js','/forensic-copilot.js']);
+const publicDirectories = /^(?:\/assets|\/core|\/router|\/services|\/state|\/ui|\/utils)\/[A-Za-z0-9._/-]+$/;
+const isPublicPath = pathname => publicRootFiles.has(pathname) || (publicDirectories.test(pathname) && !pathname.split('/').includes('..') && !/%2e/i.test(pathname));
+app.use((req, res, next) => isPublicPath(req.path) ? publicStatic(req, res, next) : next());
 app.get('/{*splat}', (_req, res) => res.sendFile(path.join(frontendPath, 'index.html')));
 app.use((error, _req, res, _next) => {
   if (error instanceof z.ZodError) return res.status(400).json({ title: 'Validation failed', status: 400, errors: error.issues.map(i => ({ path: i.path.join('.'), message: i.message })) });
+  if (error.status) return res.status(error.status).json({ type:'about:blank', title:error.message, status:error.status });
   if (error.code === '23505') return res.status(409).json({ title: 'That account or record already exists', status: 409 });
   console.error(error); res.status(500).json({ title: 'Internal server error', status: 500, traceId: crypto.randomUUID() });
 });

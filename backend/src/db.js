@@ -1,3 +1,5 @@
+const fs = require('node:fs');
+const path = require('node:path');
 const { Pool } = require('pg');
 
 let pool;
@@ -219,6 +221,8 @@ async function migrate() {
     DROP POLICY IF EXISTS corporate_records_tenant_isolation ON corporate_records;
     CREATE POLICY corporate_records_tenant_isolation ON corporate_records USING (organization_id = nullif(current_setting('app.current_organization_id',true),'')::uuid) WITH CHECK (organization_id = nullif(current_setting('app.current_organization_id',true),'')::uuid);
   `);
+  const forensicCopilotMigration = fs.readFileSync(path.join(__dirname, '..', 'migrations', '20260830_forensic_copilot.sql'), 'utf8');
+  await query(forensicCopilotMigration);
 }
 
 module.exports = { getPool, query, transaction, withTenant, migrate };

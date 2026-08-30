@@ -3,7 +3,6 @@
   'use strict';
   const staticPreview = window.location.hostname.endsWith('github.io');
   const api = (path, options = {}) => window.CentinellAPI.request(path, options);
-  const escapeHtml = value => String(value).replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
   const auth = document.createElement('div');
   auth.id = 'authGate';
   auth.innerHTML = `<div class="auth-card"><div class="auth-logo">C</div><h1>Centinell Forensics Enterprise</h1><p>Secure organizational access</p><div class="auth-tabs"><button data-mode="login" class="active">Sign in</button><button data-mode="register">Create account</button></div><form id="authForm"><div id="registerFields" hidden><label>Organization<input name="organization" autocomplete="organization" minlength="2"></label><label>Full name<input name="fullName" autocomplete="name" minlength="2"></label></div><label>Business email<input name="email" type="email" autocomplete="email" required></label><label>Password<input name="password" type="password" autocomplete="current-password" required></label><button class="btn primary" type="submit">Continue</button><div id="authError" role="alert"></div></form><small>Protected access · Tenant isolation · Audit logging</small></div>`;
@@ -41,20 +40,6 @@
     catch (e) { error.textContent = e.message; }
   });
   if (!staticPreview) api('/api/v1/auth/me').then(data => enter(data.user)).catch(() => {});
-
-  const oldInfo = document.querySelector('#ai .info');
-  if (oldInfo) oldInfo.textContent = 'Centinell AI is securely connected through the server. Provider credentials are never exposed to the browser or customer.';
-  const send = async () => {
-    const input = document.getElementById('aiInput'); const messages = document.getElementById('aiMessages');
-    const message = input && input.value.trim(); if (!message) return;
-    messages.insertAdjacentHTML('beforeend', `<div class="msg user">${escapeHtml(message)}</div>`); input.value = '';
-    if (staticPreview) { const localReply = /chain of custody|custody/i.test(message) ? 'Browser continuity guidance: verify acquisition metadata, SHA-256 integrity, custody actor, timestamp, and the previous event hash. Production case correlation requires the authenticated backend.' : /cve|vulnerab/i.test(message) ? 'Browser continuity guidance: validate the CVE against the affected asset inventory, exposure, exploitability, compensating controls, and patch evidence. Live enrichment requires the authenticated backend.' : 'Browser continuity mode can preserve notes and navigation, but it does not represent a live AI-provider response. Connect the production backend for tenant-scoped forensic analysis.'; messages.insertAdjacentHTML('beforeend', `<div class="msg bot">${escapeHtml(localReply)}</div>`); messages.scrollTop=messages.scrollHeight; return; }
-    try { const data = await api('/api/v1/ai/chat', { method:'POST', body:JSON.stringify({ message }) }); messages.insertAdjacentHTML('beforeend', `<div class="msg bot">${escapeHtml(data.reply)}</div>`); }
-    catch (e) { messages.insertAdjacentHTML('beforeend', `<div class="msg bot">${escapeHtml(e.message)}</div>`); }
-    messages.scrollTop = messages.scrollHeight;
-  };
-  const sendButton = document.getElementById('aiSendBtn'); if (sendButton) sendButton.addEventListener('click', e => { e.stopImmediatePropagation(); send(); }, true);
-  const aiInput = document.getElementById('aiInput'); if (aiInput) aiInput.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); e.stopImmediatePropagation(); send(); } }, true);
 
   const caseForm = document.getElementById('newCaseForm');
   if (caseForm) caseForm.addEventListener('submit', async event => {

@@ -33,6 +33,9 @@ test('enterprise frontend includes SPA routing, metric metadata, and technical m
   assert.match(script, /\/api\/v1\/dashboard\/summary/);
   assert.match(script, /\/api\/v1\/analysis/);
   assert.match(html, /id="technicalModal"|technical-modal/);
+  assert.match(html, /forensic-advisor\.js/);
+  assert.match(html, /forensic-copilot\.js/);
+  assert.doesNotMatch(html, /data-forensic-sequence|data-support-step|command\/support-center/);
   assert.doesNotMatch(html, /anthropic-dangerous-direct-browser-access|x-api-key|apiKeyInput/);
   assert.doesNotMatch(html, /demo environment|demo only/i);
   assert.match(fs.readFileSync(path.join(root, 'app.js'), 'utf8'), /if \(staticPreview\) \{\s*auth\.remove\(\)/);
@@ -47,6 +50,7 @@ test('enterprise frontend includes SPA routing, metric metadata, and technical m
 
 test('every metric card is promoted to an interactive keyboard-accessible analysis control', () => {
   const script = fs.readFileSync(path.join(root, 'card-navigation.js'), 'utf8');
+  assert.doesNotMatch(script, /forensicSequenceStatus|triggerModuleDepth|executeForensicStepSequence|data-forensic-sequence|data-support-step/);
   assert.match(script, /querySelectorAll\('\.page \.card'\)/);
   assert.match(script, /navigable-card/);
   assert.match(script, /setAttribute\('tabindex', '0'\)/);

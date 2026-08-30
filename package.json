@@ -1,1 +1,29 @@
-{"name":"centinell-forensics-enterprise","version":"1.1.0","private":true,"description":"Enterprise multi-tenant DFIR case management platform","main":"backend/src/server.js","engines":{"node":">=20"},"scripts":{"start":"node backend/src/server.js","dev":"node --watch backend/src/server.js","test":"node --test backend/test/*.test.js","check":"node --check backend/src/server.js && node --check app.js && node --check card-navigation.js && node --check enterprise-dashboard.js && node --check router/hash-router.js && node --check state/centinell-store.js && node --check services/api-client.js && node --check services/local-data.js && node --check core/lifecycle.js && node --check utils/performance.js && node --check ui/runtime-components.js","security-scan":"npm audit --audit-level=high && npm run check && npm test"},"dependencies":{"bcryptjs":"^3.0.2","cookie-parser":"^1.4.7","cors":"^2.8.5","dotenv":"^16.6.1","express":"^5.1.0","express-rate-limit":"^8.1.0","helmet":"^8.1.0","jsonwebtoken":"^9.0.2","pg":"^8.16.3","zod":"^4.1.5"}}
+{
+  "name": "centinell-forensics-enterprise",
+  "version": "1.1.0",
+  "private": true,
+  "description": "Enterprise multi-tenant DFIR case management platform",
+  "main": "backend/src/server.js",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node backend/src/server.js",
+    "dev": "node --watch backend/src/server.js",
+    "test": "node --test backend/test/*.test.js",
+    "check": "node --check backend/src/server.js && node --check app.js && node --check card-navigation.js && node --check enterprise-dashboard.js && node --check forensic-advisor.js && node --check forensic-copilot.js && node --check router/hash-router.js && node --check state/centinell-store.js && node --check services/api-client.js && node --check services/local-data.js && node --check core/lifecycle.js && node --check utils/performance.js && node --check ui/runtime-components.js",
+    "security-scan": "npm audit --audit-level=high && npm run check && npm test"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.2",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "dotenv": "^16.6.1",
+    "express": "^5.1.0",
+    "express-rate-limit": "^8.1.0",
+    "helmet": "^8.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "pg": "^8.16.3",
+    "zod": "^4.1.5"
+  }
+}
