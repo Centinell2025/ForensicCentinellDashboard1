@@ -49,6 +49,8 @@ PostgreSQL must be reachable before startup. For a market launch, complete the c
 
 ## DFIR readiness and operational boundary
 
+**Last updated:** 2026-08-30
+
 The dashboard provides the client-side DFIR workspace and does not claim to be a forensic evidence repository by itself.
 
 ### Implemented in the repository
