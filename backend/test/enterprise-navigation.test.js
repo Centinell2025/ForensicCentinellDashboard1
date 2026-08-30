@@ -36,6 +36,13 @@ test('enterprise frontend includes SPA routing, metric metadata, and technical m
   assert.doesNotMatch(html, /anthropic-dangerous-direct-browser-access|x-api-key|apiKeyInput/);
   assert.doesNotMatch(html, /demo environment|demo only/i);
   assert.match(fs.readFileSync(path.join(root, 'frontend/public/app.js'), 'utf8'), /if \(staticPreview\) \{\s*auth\.remove\(\)/);
+  const analysis = fs.readFileSync(path.join(root, 'frontend/public/technical-analysis.html'), 'utf8');
+  assert.match(analysis, /evidenceFile/);
+  assert.match(analysis, /SHA-256/);
+  assert.match(analysis, /sourceAuthorized/);
+  assert.match(analysis, /utcNormalized/);
+  assert.match(analysis, /peerReviewer/);
+  assert.match(analysis, /Generated UTC/);
 });
 
 test('every metric card is promoted to an interactive keyboard-accessible analysis control', () => {
