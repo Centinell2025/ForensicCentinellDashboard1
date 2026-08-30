@@ -25,6 +25,7 @@
     window.dispatchEvent(new CustomEvent('centinell:authenticated', { detail: { user } }));
   }
   if (staticPreview) {
+    auth.remove();
     enter({ fullName: 'Authorized Web Operator', role: 'viewer', organization: 'Beacon of the Eagle LLC' });
     const notice = document.createElement('div');
     notice.className = 'info';
