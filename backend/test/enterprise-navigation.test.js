@@ -35,6 +35,7 @@ test('enterprise frontend includes SPA routing, metric metadata, and technical m
   assert.match(html, /id="technicalModal"|technical-modal/);
   assert.doesNotMatch(html, /anthropic-dangerous-direct-browser-access|x-api-key|apiKeyInput/);
   assert.doesNotMatch(html, /demo environment|demo only/i);
+  assert.match(fs.readFileSync(path.join(root, 'frontend/public/app.js'), 'utf8'), /if \(staticPreview\) \{\s*auth\.remove\(\)/);
 });
 
 test('every metric card is promoted to an interactive keyboard-accessible analysis control', () => {
