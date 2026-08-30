@@ -43,7 +43,6 @@
 
   const oldInfo = document.querySelector('#ai .info');
   if (oldInfo) oldInfo.textContent = 'Centinell AI is securely connected through the server. Provider credentials are never exposed to the browser or customer.';
-  const connectionPanel = document.querySelector('#ai .info + .panel'); if (connectionPanel) connectionPanel.hidden = true;
   const send = async () => {
     const input = document.getElementById('aiInput'); const messages = document.getElementById('aiMessages');
     const message = input && input.value.trim(); if (!message) return;
