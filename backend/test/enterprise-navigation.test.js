@@ -33,6 +33,17 @@ test('enterprise frontend includes SPA routing, metric metadata, and technical m
   assert.match(script, /\/api\/v1\/dashboard\/summary/);
   assert.match(script, /\/api\/v1\/analysis/);
   assert.match(html, /id="technicalModal"|technical-modal/);
+  assert.doesNotMatch(html, /anthropic-dangerous-direct-browser-access|x-api-key|apiKeyInput/);
+  assert.doesNotMatch(html, /demo environment|demo only/i);
+});
+
+test('every metric card is promoted to an interactive keyboard-accessible analysis control', () => {
+  const script = fs.readFileSync(path.join(root, 'frontend/public/card-navigation.js'), 'utf8');
+  assert.match(script, /querySelectorAll\('\.page \.card'\)/);
+  assert.match(script, /navigable-card/);
+  assert.match(script, /setAttribute\('tabindex', '0'\)/);
+  assert.match(script, /centinell:metric-selected/);
+  assert.match(script, /event\.key === 'Enter'.*event\.key === ' '/s);
 });
 
 test('tenant-scoped dashboard, evidence, and analysis endpoints are declared', () => {
@@ -47,6 +58,8 @@ test('tenant-scoped dashboard, evidence, and analysis endpoints are declared', (
   assert.match(server, /app\.delete\('\/api\/v1\/corporate\/:module\/:id', requireAuth/);
   assert.match(server, /app\.get\('\/api\/v1\/settings\/organization', requireAuth/);
   assert.match(server, /app\.put\('\/api\/v1\/settings\/organization', requireAuth/);
+  assert.match(server, /Cross-site request rejected/);
+  assert.match(server, /Cache-Control', 'no-store/);
   assert.doesNotMatch(server, /encrypted_data_key "encryptedDataKey"/);
 });
 

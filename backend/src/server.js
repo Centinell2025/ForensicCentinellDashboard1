@@ -20,14 +20,29 @@ const app = express();
 app.disable('x-powered-by');
 app.set('trust proxy', 1);
 app.use(helmet({ contentSecurityPolicy: false, crossOriginEmbedderPolicy: false }));
+function configuredOrigins() {
+  return (process.env.ALLOWED_ORIGINS || '').split(',').map(value => value.trim()).filter(Boolean);
+}
 app.use(cors({ origin(origin, done) {
-  const allowed = (process.env.ALLOWED_ORIGINS || '').split(',').map(v => v.trim()).filter(Boolean);
+  const allowed = configuredOrigins();
   const permitted = !origin || allowed.includes(origin) || (process.env.NODE_ENV !== 'production' && !allowed.length);
   done(permitted ? null : new Error('Origin is not allowed'), permitted);
 }, credentials: true }));
 app.use(express.json({ limit: '256kb' }));
 app.use(cookieParser());
 app.use((req, res, next) => {
+  if (['GET','HEAD','OPTIONS'].includes(req.method)) return next();
+  const origin = req.get('origin');
+  const fetchSite = req.get('sec-fetch-site');
+  const ownOrigin = `${req.protocol}://${req.get('host')}`;
+  const trusted = new Set([ownOrigin, ...configuredOrigins()]);
+  if (fetchSite === 'cross-site' || (origin && !trusted.has(origin))) {
+    return res.status(403).json({ type:'about:blank', title:'Cross-site request rejected', status:403 });
+  }
+  next();
+});
+app.use((req, res, next) => {
+  if (req.path.startsWith('/api/')) res.set('Cache-Control', 'no-store');
   const started = Date.now();
   res.on('finish', () => metrics.increment('centinell_http_requests_total', { method:req.method, status:res.statusCode, route:(req.route && req.route.path) || 'unmatched' }));
   res.on('finish', () => { if (Date.now()-started > 2000) metrics.increment('centinell_slow_requests_total'); });
@@ -92,7 +107,7 @@ app.post('/api/v1/auth/login', authLimiter, asyncRoute(async (req, res) => {
   setSession(res, issueToken(user));
   res.json({ user: { id: user.id, email: user.email, fullName: user.full_name, role: user.role, organization: user.organization_name } });
 }));
-app.post('/api/v1/auth/logout', (req, res) => { res.clearCookie('centinell_session', { path: '/' }); res.status(204).end(); });
+app.post('/api/v1/auth/logout', (req, res) => { res.clearCookie('centinell_session', { httpOnly:true, secure:process.env.NODE_ENV==='production', sameSite:'strict', path:'/' }); res.status(204).end(); });
 app.get('/api/v1/auth/me', requireAuth, asyncRoute(async (req, res) => {
   const result = await query('SELECT u.id,u.email,u.full_name,u.role,o.name organization FROM users u JOIN organizations o ON o.id=u.organization_id WHERE u.id=$1 AND u.organization_id=$2', [req.auth.sub, req.auth.org]);
   if (!result.rows[0]) return res.status(401).json({ title: 'Session not found', status: 401 });

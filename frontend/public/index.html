@@ -185,7 +185,7 @@ a{color:var(--cyan)}
 <tr><td>Monthly Vulnerability Summary — July</td><td>Compliance Audit</td><td>Org-wide</td><td>Centinell AI</td><td>Aug 1, 2026</td><td><span class="chip medium">PDF</span></td><td><button class="btn download-btn">Download</button></td></tr>
 <tr><td>CASE-2028 Evidence Manifest</td><td>Case Summary</td><td class="mono">CASE-2028</td><td>S. Whitfield</td><td>Aug 11, 2026</td><td><span class="chip medium">DOCX</span></td><td><button class="btn download-btn">Download</button></td></tr>
 </tbody></table></div></div></section>
-<section class="page" id="ai"><div class="heading"><div><h1>Centinell AI</h1><p>Your AI forensic and security analyst — ask questions about cases, alerts, and evidence in plain language.</p></div><span class="chip medium">AI Forensic Analyst</span></div><div class="info">Centinell AI calls the Claude API directly from your browser using your own API key. Nothing is proxied through Centinell servers, and your key is kept in memory for this session only — it is never stored or sent anywhere except directly to Anthropic.</div><div class="panel"><div class="head"><h2>Connection</h2><span class="chip warning" id="aiConnStatus">Not connected</span></div><div style="display:flex;gap:10px;align-items:end;flex-wrap:wrap"><div class="field" style="flex:1;min-width:240px"><label>Claude API Key</label><input type="password" id="apiKeyInput" placeholder="sk-ant-..."/></div><button class="btn primary" id="apiKeySaveBtn">Connect</button></div><p class="muted" style="margin:10px 0 0">Need a key? Create one at <span class="mono">console.anthropic.com</span>.</p></div><div class="panel" style="margin-top:13px"><div class="suggest"><button type="button" data-ai-prompt="Summarize the current status of CASE-2031 and recommended next steps.">Summarize CASE-2031</button><button type="button" data-ai-prompt="Explain CVE-2026-31842 in plain language and what remediation priority it warrants.">Explain CVE-2026-31842</button><button type="button" data-ai-prompt="Explain what a hash-chained chain of custody is and why it matters for legal admissibility.">What is chain of custody?</button><button type="button" data-ai-prompt="Draft a short executive brief summarizing this week's security posture for a non-technical leadership audience.">Draft an executive brief</button></div><div class="ai-messages" id="aiMessages"><div class="msg bot">Hello — I'm Centinell AI, your forensic and security analyst assistant. I can help summarize cases, explain alerts and IOCs, draft reports, and walk through MITRE ATT&amp;CK mappings. Enter your Claude API key above, then ask me anything about your environment.</div></div><div class="composer"><input id="aiInput" placeholder="Ask about a case, alert, CVE, or request a report draft..."/><button class="btn primary" id="aiSendBtn">Send</button></div></div></section>
+<section class="page" id="ai"><div class="heading"><div><h1>Centinell AI</h1><p>Your AI forensic and security analyst — ask questions about cases, alerts, and evidence in plain language.</p></div><span class="chip medium">Server-secured AI</span></div><div class="info">Centinell AI connects only through the authenticated server gateway. Provider credentials remain encrypted in the production environment and are never requested by or exposed to the browser.</div><div class="panel" style="margin-top:13px"><div class="suggest"><button type="button" data-ai-prompt="Summarize the current status of CASE-2031 and recommended next steps.">Summarize CASE-2031</button><button type="button" data-ai-prompt="Explain CVE-2026-31842 in plain language and what remediation priority it warrants.">Explain CVE-2026-31842</button><button type="button" data-ai-prompt="Explain what a hash-chained chain of custody is and why it matters for legal admissibility.">What is chain of custody?</button><button type="button" data-ai-prompt="Draft a short executive brief summarizing this week's security posture for a non-technical leadership audience.">Draft an executive brief</button></div><div class="ai-messages" id="aiMessages"><div class="msg bot">Hello — I'm Centinell AI. I can assist with tenant-authorized cases, alerts, evidence, report drafting, and MITRE ATT&amp;CK correlation. Sign in to the production deployment for live analysis.</div></div><div class="composer"><input id="aiInput" aria-label="Centinell AI message" placeholder="Ask about a case, alert, CVE, or request a report draft..."/><button class="btn primary" id="aiSendBtn">Send</button></div></div></section>
 <section class="page" id="settings"><div class="heading"><div><h1>Settings</h1><p>Organization configuration, notification preferences, integrations, and environment details.</p></div><span class="chip medium">Production Workspace</span></div><div class="page-grid"><div style="display:grid;gap:13px"><div class="panel"><div class="head"><h2>Organization</h2></div><div class="form"><div class="field"><label>Organization Name</label><input id="orgName" value="BankCorp Client — Managed Detection &amp; Response"/></div><div class="field"><label>Time Zone</label><select id="orgTz"><option>UTC</option><option selected>America/New_York</option><option>America/Chicago</option><option>America/Los_Angeles</option><option>Europe/London</option></select></div><div class="field"><label>Evidence Retention (days)</label><input id="orgRetention" type="number" value="2555"/></div><div class="formactions"><button class="btn primary" id="saveOrgBtn">Save Changes</button></div></div></div><div class="panel"><div class="head"><h2>Notifications</h2></div><div class="settings-row"><div><b>Critical alert emails</b><span class="muted">Send an email the moment a critical alert fires.</span></div><label class="switch"><input type="checkbox" checked/><span class="slider"></span></label></div><div class="settings-row"><div><b>SMS for P1 incidents</b><span class="muted">Text the on-call analyst for priority-1 incidents only.</span></div><label class="switch"><input type="checkbox" checked/><span class="slider"></span></label></div><div class="settings-row"><div><b>Weekly executive digest</b><span class="muted">A Friday summary of cases, alerts, and open findings.</span></div><label class="switch"><input type="checkbox" checked/><span class="slider"></span></label></div><div class="settings-row"><div><b>Weekly compliance reminders</b><span class="muted">Nudge owners on findings approaching their due date.</span></div><label class="switch"><input type="checkbox"/><span class="slider"></span></label></div></div></div><div style="display:grid;gap:13px"><div class="panel"><div class="head"><h2>Integrations</h2></div><div class="settings-row"><div><b>SIEM Ingestion</b><span class="muted">Compatible with Splunk, Sentinel, QRadar</span></div><span class="chip good">Connected</span></div><div class="settings-row"><div><b>Ticketing</b><span class="muted">Compatible with ServiceNow, Jira</span></div><span class="chip good">Connected</span></div><div class="settings-row"><div><b>Cloud Connectors</b><span class="muted">AWS, Azure, GCP</span></div><span class="chip good">Connected</span></div><div class="settings-row"><div><b>Chat Notifications</b><span class="muted">Slack / Microsoft Teams</span></div><span class="chip warning">Not Connected</span></div></div><div class="panel"><div class="head"><h2>About</h2></div><p class="muted" style="margin:0 0 8px">Centinell Forensics Enterprise is an operational cybersecurity and digital-forensics workspace. Data visibility and persistence are controlled by the authenticated organization and connected production backend.</p><p class="muted" style="margin:0">Centinell Forensics Enterprise v1.0 · Beacon of the Eagle LLC</p></div></div></div></section>
 </main></div><footer style="padding:12px 20px;text-align:center;color:#9bb8d7;font-size:11px;background:#04142b">Copyright © 2026 Beacon of the Eagle LLC. All Rights Reserved. · Centinell Forensics Enterprise is proprietary software.</footer>
 <div class="modal" id="caseModal"><div class="box"><div class="head"><h2>New Case</h2><button class="btn keybtn" id="caseModalClose" aria-label="Close">✕</button></div><form class="form" id="newCaseForm"><div class="field"><label>Case Title</label><input id="ncTitle" required placeholder="e.g. Suspicious Outbound Transfer - Finance"/></div><div class="field"><label>Case Type</label><select id="ncType"><option>Digital Forensics</option><option>Incident Response</option><option>Malware Analysis</option><option>Data Breach</option><option>Insider Threat</option><option>eDiscovery</option></select></div><div class="field"><label>Priority</label><select id="ncPriority"><option>Critical</option><option>High</option><option selected>Medium</option><option>Low</option></select></div><div class="field"><label>Assigned Investigator</label><select id="ncInvestigator"><option>Unassigned</option><option>J. Alvarez</option><option>M. Chen</option><option>S. Whitfield</option><option>R. Okafor</option></select></div><div class="field"><label>Description</label><textarea id="ncDesc" rows="3" placeholder="Brief summary of what triggered this case..."></textarea></div><div class="formactions"><button type="button" class="btn" id="caseModalCancel">Cancel</button><button type="submit" class="btn primary">Create Case</button></div></form></div></div>
@@ -444,103 +444,9 @@ var custodyCaseSelect = document.getElementById('custodyCase');
 if(custodyCaseSelect){
   custodyCaseSelect.addEventListener('change', function(){
     if(custodyCaseSelect.selectedIndex !== 0){
-      showToast('Ledger not loaded', 'This demo includes a fully wired custody ledger for CASE-2031 only.', 'error');
+      showToast('Ledger not loaded', 'No tenant-authorized custody ledger is loaded for that case.', 'error');
       custodyCaseSelect.selectedIndex = 0;
     }
-  });
-}
-
-/* ---------- Centinell AI (BYOK — calls Anthropic directly with your own key) ---------- */
-var claudeApiKey = '';
-var apiKeySaveBtn = document.getElementById('apiKeySaveBtn');
-if(apiKeySaveBtn){
-  apiKeySaveBtn.addEventListener('click', function(){
-    var input = document.getElementById('apiKeyInput');
-    var val = input.value.trim();
-    if(!val){
-      showToast('No key entered', 'Paste your Claude API key first.', 'error');
-      return;
-    }
-    claudeApiKey = val;
-    var status = document.getElementById('aiConnStatus');
-    status.textContent = 'Connected';
-    status.className = 'chip good';
-    showToast('Connected', 'Centinell AI is ready. Your key stays in this browser tab for the session only.', 'success');
-  });
-}
-
-function addAiMessage(text, who){
-  var wrap = document.getElementById('aiMessages');
-  if(!wrap) return null;
-  var div = document.createElement('div');
-  div.className = 'msg ' + (who === 'user' ? 'user' : 'bot');
-  div.textContent = text;
-  wrap.appendChild(div);
-  wrap.scrollTop = wrap.scrollHeight;
-  return div;
-}
-
-function sendAiMessage(rawText){
-  var text = (rawText || '').trim();
-  if(!text) return;
-  if(!claudeApiKey){
-    showToast('Connect your API key', 'Enter and connect your Claude API key above to chat with Centinell AI.', 'error');
-    return;
-  }
-  addAiMessage(text, 'user');
-  var aiInput = document.getElementById('aiInput');
-  if(aiInput) aiInput.value = '';
-  var thinking = addAiMessage('Thinking…', 'bot');
-  var sendBtn = document.getElementById('aiSendBtn');
-  if(sendBtn) sendBtn.disabled = true;
-
-  Promise.resolve().then(function(){
-    return fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'content-type': 'application/json',
-        'x-api-key': claudeApiKey,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true'
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-5',
-        max_tokens: 1024,
-        system: 'You are Centinell AI, a professional digital forensics and cybersecurity analyst assistant embedded in the Centinell Forensics Enterprise platform. Answer clearly and precisely for a security operations and DFIR audience. Reference standard concepts (chain of custody, MITRE ATT&CK, CVSS, NIST/ISO 27001/SOC 2/PCI DSS/GDPR) where relevant. Default to concise, actionable answers; write a fuller structured report only when asked for one.',
-        messages: [{ role: 'user', content: text }]
-      })
-    });
-  }).then(function(res){
-    return res.json().then(function(data){ return { ok: res.ok, status: res.status, data: data }; });
-  }).then(function(result){
-    if(!result.ok){
-      var msg = (result.data && result.data.error && result.data.error.message) ? result.data.error.message : ('Request failed (' + result.status + ').');
-      thinking.textContent = "I couldn't reach the API: " + msg;
-      showToast('AI request failed', msg, 'error');
-      return;
-    }
-    var blocks = result.data.content || [];
-    var textBlock = null;
-    for(var i=0;i<blocks.length;i++){ if(blocks[i].type === 'text'){ textBlock = blocks[i]; break; } }
-    thinking.textContent = textBlock ? textBlock.text : 'No response text was returned.';
-  }).catch(function(){
-    thinking.textContent = "I couldn't reach the API from this preview. Once this file is deployed to your own domain (GitHub Pages / Railway), this connects directly to Anthropic with your key.";
-    showToast('Connection error', 'The request to the Claude API did not complete.', 'error');
-  }).finally(function(){
-    if(sendBtn) sendBtn.disabled = false;
-  });
-}
-
-var aiSendBtn = document.getElementById('aiSendBtn');
-if(aiSendBtn){
-  aiSendBtn.addEventListener('click', function(){
-    sendAiMessage(document.getElementById('aiInput').value);
-  });
-}
-var aiInputEl = document.getElementById('aiInput');
-if(aiInputEl){
-  aiInputEl.addEventListener('keydown', function(e){
-    if(e.key === 'Enter'){ e.preventDefault(); sendAiMessage(aiInputEl.value); }
   });
 }
 
@@ -556,42 +462,6 @@ document.querySelectorAll('[data-ai-prompt]').forEach(function(btn){
     }
   });
 });
-
-/* ---------- Reports — decorative download action ---------- */
-document.querySelectorAll('.download-btn').forEach(function(btn){
-  btn.addEventListener('click', function(){
-    var row = btn.closest('tr');
-    var name = row ? row.children[0].textContent : 'Report';
-    showToast('Preparing export', '"' + name + '" is queued for download in this demo environment.', 'success');
-  });
-});
-
-/* ---------- Settings — save (demo only, no backend persistence) ---------- */
-var saveOrgBtn = document.getElementById('saveOrgBtn');
-if(saveOrgBtn){
-  saveOrgBtn.addEventListener('click', function(){
-    showToast('Settings saved', 'Organization settings updated for this session.', 'success');
-  });
-}
-
-/* ---------- Notifications bell ---------- */
-var notifBtn = document.getElementById('notifBtn');
-if(notifBtn){
-  notifBtn.addEventListener('click', function(){
-    showToast('6 notifications', '3 critical alerts and 3 case updates need review.', undefined);
-  });
-}
-
-/* ---------- Language selector ---------- */
-var langSelect = document.getElementById('lang');
-if(langSelect){
-  langSelect.addEventListener('change', function(){
-    if(langSelect.value === 'es'){
-      showToast('Language', 'Full Spanish interface is coming soon. Centinell AI can already reply in Spanish if you ask it to.', undefined);
-      langSelect.value = 'en';
-    }
-  });
-}
 
 })();
 </script>
