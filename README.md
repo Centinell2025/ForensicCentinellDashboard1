@@ -45,3 +45,31 @@ npm start
 ```
 
 PostgreSQL must be reachable before startup. For a market launch, complete the checklist in `docs/LAUNCH-CHECKLIST.md`.
+
+
+## DFIR readiness and operational boundary
+
+The dashboard provides the client-side DFIR workspace and does not claim to be a forensic evidence repository by itself.
+
+### Implemented in the repository
+
+- Hash-based SPA navigation with direct module links.
+- Accessible cards, buttons, keyboard activation, and technical-analysis views.
+- Evidence provenance fields, UTC normalization indicators, analyst notes, peer-review fields, and TXT export.
+- Browser-side SHA-256 verification for a selected file, clearly marked as a local fingerprint.
+- Chain-of-custody integrity verification and investigative panel routing.
+- Persistent Vulnerabilities and Asset Intelligence filters.
+- Offline-safe local state for continuity and user preferences.
+- Enterprise CI and CodeQL checks; SonarCloud is not required.
+
+### Production requirements before accepting tenant evidence
+
+The following must run on an authenticated backend (for example Railway), never in GitHub Pages:
+
+1. Derive organization_id from the authenticated session and enforce PostgreSQL RLS.
+2. Upload evidence to encrypted object storage with server-side SHA-256 and immutable audit records.
+3. Keep JWT secrets, encryption keys, VirusTotal/TAXII credentials, and database credentials in server-side secrets.
+4. Record UTC timestamps, actor, command, evidence reference, access reason, and peer approval.
+5. Enable backups, retention/legal hold, malware scanning, rate limits, monitoring, and recovery tests.
+
+Until those controls are connected, the public Pages deployment is an interface and controlled local workspace, not a substitute for a production evidence vault.
