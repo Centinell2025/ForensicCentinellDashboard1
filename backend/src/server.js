@@ -160,6 +160,14 @@ app.get('/api/v1/dashboard/summary', requireAuth, asyncRoute(async (req, res) =>
   res.json({ summary, generatedAt: new Date().toISOString() });
 }));
 
+app.get('/api/v1/command/modules', requireAuth, (_req, res) => res.json({ modules:[
+  { id:'operations-volume', route:'soc', capability:'Tenant-scoped SOC telemetry and investigation' },
+  { id:'priority-activity', route:'soc', capability:'Alert triage and correlated activity' },
+  { id:'open-cases', route:'cases', capability:'Case investigation and evidence workflow' },
+  { id:'compliance-posture', route:'risk', capability:'Control coverage and finding review' },
+  { id:'real-time-operations', route:'soc', capability:'Operational telemetry workspace' }
+], generatedAt:new Date().toISOString() }));
+
 app.get('/api/v1/evidence', requireAuth, asyncRoute(async (req, res) => {
   const result = await withTenant(req.auth.org, client => client.query(`
     SELECT e.id,e.object_key "objectKey",e.plaintext_sha256 "sha256",e.cipher,e.kms_key_id "kmsKeyId",

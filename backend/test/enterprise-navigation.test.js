@@ -36,6 +36,13 @@ test('enterprise frontend includes SPA routing, metric metadata, and technical m
   assert.doesNotMatch(html, /anthropic-dangerous-direct-browser-access|x-api-key|apiKeyInput/);
   assert.doesNotMatch(html, /demo environment|demo only/i);
   assert.match(fs.readFileSync(path.join(root, 'frontend/public/app.js'), 'utf8'), /if \(staticPreview\) \{\s*auth\.remove\(\)/);
+  const analysis = fs.readFileSync(path.join(root, 'frontend/public/technical-analysis.html'), 'utf8');
+  assert.match(analysis, /evidenceFile/);
+  assert.match(analysis, /SHA-256/);
+  assert.match(analysis, /sourceAuthorized/);
+  assert.match(analysis, /utcNormalized/);
+  assert.match(analysis, /peerReviewer/);
+  assert.match(analysis, /Generated UTC/);
 });
 
 test('every metric card is promoted to an interactive keyboard-accessible analysis control', () => {
@@ -45,11 +52,15 @@ test('every metric card is promoted to an interactive keyboard-accessible analys
   assert.match(script, /setAttribute\('tabindex', '0'\)/);
   assert.match(script, /centinell:metric-selected/);
   assert.match(script, /event\.key === 'Enter'.*event\.key === ' '/s);
+  assert.match(script, /panelRoutes/);
+  assert.match(script, /investigative-panel/);
+  assert.match(script, /data-action-route|actionRoute/);
 });
 
 test('tenant-scoped dashboard, evidence, and analysis endpoints are declared', () => {
   const server = fs.readFileSync(path.join(root, 'backend/src/server.js'), 'utf8');
   assert.match(server, /app\.get\('\/api\/v1\/dashboard\/summary', requireAuth/);
+  assert.match(server, /app\.get\('\/api\/v1\/command\/modules', requireAuth/);
   assert.match(server, /app\.get\('\/api\/v1\/evidence', requireAuth/);
   assert.match(server, /app\.get\('\/api\/v1\/analysis', requireAuth/);
   assert.match(server, /app\.post\('\/api\/v1\/investigation\/execute', requireAuth/);
