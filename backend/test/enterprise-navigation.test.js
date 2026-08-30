@@ -6,8 +6,8 @@ const path = require('node:path');
 const root = path.join(__dirname, '..', '..');
 
 test('enterprise frontend includes SPA routing, metric metadata, and technical modal', () => {
-  const script = fs.readFileSync(path.join(root, 'frontend/public/enterprise-dashboard.js'), 'utf8');
-  const html = fs.readFileSync(path.join(root, 'frontend/public/index.html'), 'utf8');
+  const script = fs.readFileSync(path.join(root, 'enterprise-dashboard.js'), 'utf8');
+  const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
   assert.match(script, /CentinellRouter\.navigate/);
   assert.match(script, /dataset\.metric/);
   assert.match(script, /centinell:metric-selected/);
@@ -35,8 +35,8 @@ test('enterprise frontend includes SPA routing, metric metadata, and technical m
   assert.match(html, /id="technicalModal"|technical-modal/);
   assert.doesNotMatch(html, /anthropic-dangerous-direct-browser-access|x-api-key|apiKeyInput/);
   assert.doesNotMatch(html, /demo environment|demo only/i);
-  assert.match(fs.readFileSync(path.join(root, 'frontend/public/app.js'), 'utf8'), /if \(staticPreview\) \{\s*auth\.remove\(\)/);
-  const analysis = fs.readFileSync(path.join(root, 'frontend/public/technical-analysis.html'), 'utf8');
+  assert.match(fs.readFileSync(path.join(root, 'app.js'), 'utf8'), /if \(staticPreview\) \{\s*auth\.remove\(\)/);
+  const analysis = fs.readFileSync(path.join(root, 'technical-analysis.html'), 'utf8');
   assert.match(analysis, /evidenceFile/);
   assert.match(analysis, /SHA-256/);
   assert.match(analysis, /sourceAuthorized/);
@@ -46,7 +46,7 @@ test('enterprise frontend includes SPA routing, metric metadata, and technical m
 });
 
 test('every metric card is promoted to an interactive keyboard-accessible analysis control', () => {
-  const script = fs.readFileSync(path.join(root, 'frontend/public/card-navigation.js'), 'utf8');
+  const script = fs.readFileSync(path.join(root, 'card-navigation.js'), 'utf8');
   assert.match(script, /querySelectorAll\('\.page \.card'\)/);
   assert.match(script, /navigable-card/);
   assert.match(script, /setAttribute\('tabindex', '0'\)/);
@@ -76,7 +76,7 @@ test('tenant-scoped dashboard, evidence, and analysis endpoints are declared', (
 });
 
 test('every rendered HTML button declares an actionable contract', () => {
-  const sources = ['frontend/public/index.html','frontend/public/enterprise-dashboard.js','frontend/public/app.js','frontend/public/ui/runtime-components.js'];
+  const sources = ['index.html','enterprise-dashboard.js','app.js','ui/runtime-components.js'];
   const unactionable = [];
   sources.forEach(file => {
     const source = fs.readFileSync(path.join(root, file), 'utf8');
@@ -90,14 +90,14 @@ test('every rendered HTML button declares an actionable contract', () => {
 
 test('frontend architecture separates router, store, API, lifecycle, cache, and runtime UI', () => {
   const files = ['router/hash-router.js','state/centinell-store.js','services/api-client.js','services/local-data.js','core/lifecycle.js','utils/performance.js','ui/runtime-components.js'];
-  files.forEach(file => assert.ok(fs.existsSync(path.join(root, 'frontend/public', file)), `${file} must exist`));
-  assert.match(fs.readFileSync(path.join(root, 'frontend/public/router/hash-router.js'), 'utf8'), /URLSearchParams|hashchange/);
-  assert.match(fs.readFileSync(path.join(root, 'frontend/public/state/centinell-store.js'), 'utf8'), /CentinellStore/);
-  assert.match(fs.readFileSync(path.join(root, 'frontend/public/services/api-client.js'), 'utf8'), /AbortController/);
-  assert.match(fs.readFileSync(path.join(root, 'frontend/public/services/local-data.js'), 'utf8'), /indexedDB/);
-  assert.match(fs.readFileSync(path.join(root, 'frontend/public/core/lifecycle.js'), 'utf8'), /destroyAll/);
-  assert.match(fs.readFileSync(path.join(root, 'frontend/public/utils/performance.js'), 'utf8'), /debounce|throttle/);
-  assert.match(fs.readFileSync(path.join(root, 'frontend/public/ui/runtime-components.js'), 'utf8'), /applyRBAC|Export CSV|global\.print/);
+  files.forEach(file => assert.ok(fs.existsSync(path.join(root, file)), `${file} must exist`));
+  assert.match(fs.readFileSync(path.join(root, 'router/hash-router.js'), 'utf8'), /URLSearchParams|hashchange/);
+  assert.match(fs.readFileSync(path.join(root, 'state/centinell-store.js'), 'utf8'), /CentinellStore/);
+  assert.match(fs.readFileSync(path.join(root, 'services/api-client.js'), 'utf8'), /AbortController/);
+  assert.match(fs.readFileSync(path.join(root, 'services/local-data.js'), 'utf8'), /indexedDB/);
+  assert.match(fs.readFileSync(path.join(root, 'core/lifecycle.js'), 'utf8'), /destroyAll/);
+  assert.match(fs.readFileSync(path.join(root, 'utils/performance.js'), 'utf8'), /debounce|throttle/);
+  assert.match(fs.readFileSync(path.join(root, 'ui/runtime-components.js'), 'utf8'), /applyRBAC|Export CSV|global\.print/);
 });
 
 test('reviewer guide documents test, RLS, offline, security, and accessibility review', () => {

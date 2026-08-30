@@ -30,7 +30,7 @@
     const notice = document.createElement('div');
     notice.className = 'info';
     notice.style.cssText = 'position:sticky;top:0;z-index:100;text-align:center;border-left:0;border-bottom:1px solid #71e4ff';
-    notice.textContent = 'Enterprise web interface · Sign in through the production deployment for tenant data and protected operations';
+    notice.textContent = 'Live product demonstration · synthetic data for evaluation';
     document.body.prepend(notice);
   }
   form.addEventListener('submit', async event => {

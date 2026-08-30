@@ -80,31 +80,3 @@
   var style=document.createElement('style');style.textContent='.investigative-panel{cursor:pointer;transition:transform .18s,border-color .18s,box-shadow .18s}.investigative-panel:hover,.investigative-panel:focus-visible{transform:translateY(-2px);border-color:var(--cyan);box-shadow:0 18px 44px #0007;outline:none}.panel-action-cue{display:block;margin-top:14px;padding-top:10px;border-top:1px solid var(--line);color:var(--cyan);font-size:11px;font-weight:700}';document.head.appendChild(style);
 })();
 
-/* Forensic support diagnostic sequence: 2 → 2 → 3 → 2 → 1. */
-(function(){
-  var sequence=[2,2,3,2,1], key='centinell:forensic-sequence:v1', index=Number(sessionStorage.getItem(key)||0);
-  function targetDepth(){return sequence[index]}
-  function announce(){
-    var text='Forensic diagnostic step '+Math.min(index+1,sequence.length)+'/'+sequence.length+' · depth '+targetDepth();
-    var el=document.getElementById('forensicSequenceStatus');
-    if(!el){el=document.createElement('div');el.id='forensicSequenceStatus';el.setAttribute('role','status');el.style.cssText='position:fixed;left:18px;bottom:18px;z-index:9800;padding:9px 13px;border:1px solid #71e4ff;border-radius:9px;background:#082342;color:#dff8ff;font:12px Inter,sans-serif';document.body.appendChild(el)}
-    el.textContent=text;
-  }
-  window.triggerModuleDepth=function(depth){
-    var route=depth>=3?'evidence':depth===2?'soc':'command';
-    if(window.CentinellRouter) window.CentinellRouter.navigate(route); else window.location.hash='#/'+route;
-    window.dispatchEvent(new CustomEvent('centinell:forensic-depth',{detail:{depth:depth,route:route,step:index+1}}));
-    announce();
-  };
-  window.executeForensicStepSequence=function(){
-    var depth=targetDepth(); triggerModuleDepth(depth); index=(index+1)%sequence.length; sessionStorage.setItem(key,String(index));
-  };
-  document.addEventListener('click',function(e){
-    var el=e.target.closest('[data-forensic-sequence],#command [data-support-step]');
-    if(el) window.executeForensicStepSequence();
-  });
-  document.addEventListener('keydown',function(e){
-    if((e.key==='Enter'||e.key===' ')&&e.target.closest('[data-forensic-sequence],#command [data-support-step]')){e.preventDefault();window.executeForensicStepSequence();}
-  });
-  if(location.hash.indexOf('/command/support-center')===0){if(window.CentinellRouter)window.CentinellRouter.navigate('command');announce();}
-})();
