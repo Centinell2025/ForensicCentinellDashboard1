@@ -45,11 +45,15 @@ test('every metric card is promoted to an interactive keyboard-accessible analys
   assert.match(script, /setAttribute\('tabindex', '0'\)/);
   assert.match(script, /centinell:metric-selected/);
   assert.match(script, /event\.key === 'Enter'.*event\.key === ' '/s);
+  assert.match(script, /panelRoutes/);
+  assert.match(script, /investigative-panel/);
+  assert.match(script, /data-action-route|actionRoute/);
 });
 
 test('tenant-scoped dashboard, evidence, and analysis endpoints are declared', () => {
   const server = fs.readFileSync(path.join(root, 'backend/src/server.js'), 'utf8');
   assert.match(server, /app\.get\('\/api\/v1\/dashboard\/summary', requireAuth/);
+  assert.match(server, /app\.get\('\/api\/v1\/command\/modules', requireAuth/);
   assert.match(server, /app\.get\('\/api\/v1\/evidence', requireAuth/);
   assert.match(server, /app\.get\('\/api\/v1\/analysis', requireAuth/);
   assert.match(server, /app\.post\('\/api\/v1\/investigation\/execute', requireAuth/);
