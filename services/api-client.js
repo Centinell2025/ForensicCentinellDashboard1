@@ -9,7 +9,7 @@
       else options.signal.addEventListener('abort', function () { controller.abort(); }, { once: true });
     }
     try {
-      var response = await fetch(path, Object.assign({}, options, { credentials: 'same-origin', signal: controller.signal, headers: Object.assign({ 'content-type': 'application/json' }, options.headers || {}) }));
+      var response = await fetch(path, Object.assign({}, options, { credentials: 'same-origin', signal: controller.signal, headers: Object.assign({ 'content-type': 'application/json', 'x-centinell-client': 'web' }, options.headers || {}) }));
       if (response.status === 204) return null;
       var data = await response.json().catch(function () { return {}; });
       if (!response.ok) { var error = new Error(data.title || ('Request failed (' + response.status + ')')); error.status = response.status; error.details = data; throw error; }
