@@ -3,6 +3,7 @@ const path = require('node:path');
 const { Pool } = require('pg');
 
 let pool;
+let migrationPromise;
 function getPool() {
   if (!pool) {
     if (!process.env.DATABASE_URL) throw new Error('DATABASE_URL is required');
@@ -45,6 +46,16 @@ async function withTenant(organizationId, work) {
 }
 
 async function migrate() {
+  if (!migrationPromise) {
+    migrationPromise = migrateOnce().catch(error => {
+      migrationPromise = null;
+      throw error;
+    });
+  }
+  return migrationPromise;
+}
+
+async function migrateOnce() {
   await query(`
     CREATE EXTENSION IF NOT EXISTS pgcrypto;
     CREATE TABLE IF NOT EXISTS organizations (
