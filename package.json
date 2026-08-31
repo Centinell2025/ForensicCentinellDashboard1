@@ -11,7 +11,7 @@
     "start": "node backend/src/server.js",
     "dev": "node --watch backend/src/server.js",
     "test": "node --test backend/test/*.test.js",
-    "check": "node --check backend/src/server.js && node --check app.js && node --check card-navigation.js && node --check enterprise-dashboard.js && node --check forensic-advisor.js && node --check forensic-copilot.js && node --check router/hash-router.js && node --check state/centinell-store.js && node --check services/api-client.js && node --check services/local-data.js && node --check core/lifecycle.js && node --check utils/performance.js && node --check ui/runtime-components.js",
+    "check": "node --check backend/src/server.js && node --check app.js && node --check card-navigation.js && node --check enterprise-dashboard.js && node --check forensic-advisor.js && node --check forensic-copilot.js && node --check interactive-workbench.js && node --check router/hash-router.js && node --check state/centinell-store.js && node --check services/api-client.js && node --check services/local-data.js && node --check core/lifecycle.js && node --check utils/performance.js && node --check ui/runtime-components.js",
     "security-scan": "npm audit --audit-level=high && npm run check && npm test"
   },
   "dependencies": {

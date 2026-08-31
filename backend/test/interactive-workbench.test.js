@@ -1,0 +1,57 @@
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+
+const root = path.join(__dirname, '..', '..');
+
+test('v1.1.0 interactive workbench covers universal drawers, live events, and legal seal', () => {
+  const script = fs.readFileSync(path.join(root, 'interactive-workbench.js'), 'utf8');
+  const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  assert.match(html, /interactive-workbench\.js/);
+  assert.match(script, /querySelectorAll\('\.page \.card'\)/);
+  assert.match(script, /closest\('\.page table tbody tr'\)/);
+  assert.match(script, /kpiDrawer/);
+  assert.match(script, /EventSource/);
+  assert.match(script, /\/api\/v1\/dashboard\/kpis/);
+  assert.match(script, /\/api\/v1\/evidence\//);
+  assert.match(script, /custody-state/);
+  assert.match(script, /EVD-4438/);
+  assert.match(script, /kpi-filter-pill/);
+  assert.match(script, /data-tooltip/);
+  assert.match(script, /Federal Digital Evidence/);
+  assert.match(script, /FRE Rules 902/);
+  assert.match(script, /FRCP Rules 34 & 37/);
+  assert.match(script, /18 U\.S\.C\. § 2701 et seq\./);
+  assert.match(script, /HIPAA Security Rule/);
+  assert.match(script, /Sarbanes-Oxley/);
+  assert.match(script, /DFIR limitation notice/);
+  assert.match(script, /Beacon of the Eagle LLC/);
+  assert.match(script, /VERSION = '1\.1\.0'/);
+});
+
+test('v1.1.0 live KPI and retry contracts are tenant-scoped and append-only', () => {
+  const server = fs.readFileSync(path.join(root, 'backend', 'src', 'server.js'), 'utf8');
+  const openapi = fs.readFileSync(path.join(root, 'api', 'openapi.yaml'), 'utf8');
+  assert.match(server, /app\.get\('\/api\/v1\/dashboard\/kpis', requireAuth/);
+  assert.match(server, /app\.get\('\/api\/v1\/dashboard\/kpis\/stream', requireAuth/);
+  assert.match(server, /text\/event-stream/);
+  assert.match(server, /app\.get\('\/api\/v1\/evidence\/:evidenceKey', requireAuth/);
+  assert.match(server, /app\.post\('\/api\/v1\/evidence\/:evidenceKey\/retry', requireAuth, allow\('admin','analyst'\)/);
+  assert.match(server, /app\.post\('\/api\/v1\/evidence\/:evidenceKey\/custody-state', requireAuth, allow\('admin','analyst'\)/);
+  assert.match(server, /withTenant\(organizationId/);
+  assert.match(server, /evidence\.hash_retry_requested/);
+  assert.match(server, /evidence\.custody_state_recorded/);
+  assert.match(server, /RETURNING id,action,entity_type/);
+  assert.match(server, /immutableEvidence: true/);
+  assert.doesNotMatch(server, /UPDATE evidence_objects/);
+  assert.doesNotMatch(server, /ALTER TABLE evidence_objects/);
+  assert.doesNotMatch(server, /encrypted_data_key "encryptedDataKey"/);
+  assert.match(openapi, /\/dashboard\/kpis:/);
+  assert.match(openapi, /\/dashboard\/kpis\/stream:/);
+  assert.match(openapi, /\/evidence\/\{evidenceKey\}\/retry:/);
+  assert.match(openapi, /\/evidence\/\{evidenceKey\}\/custody-state:/);
+  assert.match(openapi, /KpiSnapshot:/);
+  assert.match(openapi, /HashRetryResponse:/);
+  assert.match(openapi, /CustodyStateResponse:/);
+});

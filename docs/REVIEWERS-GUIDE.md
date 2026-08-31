@@ -15,6 +15,10 @@ Validate the corporate Command Center expansion, deep hash routing, tenant-scope
 | Websites | `enterprise-navigation.test.js` | Static integration | Workspace routing and records; external uptime probe is not yet implemented | Passing with documented gap |
 | Social Intelligence | `enterprise-navigation.test.js` | Static integration | Workspace routing and persistent preview records | Passing |
 | Call Rates | `enterprise-navigation.test.js` | Static integration | Workspace routing, reports, and browser persistence | Passing |
+| Universal KPI workbench | `interactive-workbench.test.js` | Static + browser contract | Every `.page .card` and table row opens a drawer; dynamic corporate modules are observed after injection | Passing |
+| Live KPI API and SSE | `interactive-workbench.test.js` | Static backend contract | Tenant session, no-store responses, UTC snapshot, keep-alive stream, and reconnect polling | Passing |
+| Evidence retry action | `interactive-workbench.test.js` | Static backend contract | `EVD-4438`-compatible request appends an audit event and refuses already-verified hashes | Passing |
+| Federal compliance reference | `interactive-workbench.test.js` | Static UI contract | Risk & Compliance / Reports show FRE, FRCP/litigation hold, SCA, HIPAA, SOX, and DFIR limitation notice | Passing |
 | Corporate CRUD API | `enterprise-navigation.test.js` | Static backend contract | GET/POST/DELETE require authentication; writes require `admin` or `analyst` | Passing |
 | PostgreSQL tenant isolation | `backend/test/rls.integration.test.js` | Database integration | Cross-tenant reads and writes are denied by forced RLS | Passing in Enterprise CI; skipped locally without `DATABASE_URL` |
 | Audit hash chain | `security.test.js`, database trigger and verifier | Unit + integration | Detects altered or reordered audit events | Passing |
@@ -123,6 +127,8 @@ Do not place `JWT_SECRET`, database credentials, API keys, Vault tokens, or Sale
 | Navigation buttons | Native `<button>` elements support `Tab`, `Enter`, and `Space` | Keyboard walkthrough required |
 | Metric cards | `tabindex="0"`, link role, `Enter` and `Space` activation | Covered by source assertion; manual walkthrough required |
 | Record rows | Keyboard focus, button role, `Enter` and `Space` drill-down | Covered by source assertion; manual walkthrough required |
+| KPI drawer | `role="dialog"`, `aria-modal="true"`, labelled title, Escape/backdrop close, focus return | Source verified; manual screen-reader review required |
+| Security tooltips and filter pills | Keyboard-focusable signals and native buttons with `aria-pressed` | Source verified; contrast/touch review required |
 | Technical modal | `role="dialog"`, `aria-modal="true"`, labelled title, Escape close | Source verified; focus trapping remains pending |
 | Toasts | Existing status toast uses `role="status"` and `aria-live="polite"` | Source verified |
 | Command module host | `aria-live="polite"` for dynamic workspace updates | Source verified |

@@ -18,6 +18,7 @@ const { COMMANDS, classifyIndicator, virusTotalLookup, taxiiLookup, packetSummar
 const { DEFAULT_ADVISOR_DIRECTIVE, CENTINELL_AI_MODEL, normalizeFinding } = require('../../forensic-advisor');
 
 const app = express();
+const PLATFORM_VERSION = '1.1.0';
 app.disable('x-powered-by');
 app.set('trust proxy', 1);
 app.use(helmet({ contentSecurityPolicy: false, crossOriginEmbedderPolicy: false }));
@@ -73,9 +74,11 @@ function requireAuth(req, res, next) {
 }
 function allow(...roles) { return (req, res, next) => roles.includes(req.auth.role) ? next() : res.status(403).json({ title: 'Insufficient permission', status: 403 }); }
 async function audit(req, action, entityType, entityId, metadata = {}, client) {
-  const insert = tenantClient => query('INSERT INTO audit_events (organization_id, actor_id, action, entity_type, entity_id, metadata, ip) VALUES ($1,$2,$3,$4,$5,$6,$7)', [req.auth.org, req.auth.sub, action, entityType, entityId, metadata, req.ip], tenantClient);
-  if (client) await insert(client); else await withTenant(req.auth.org, insert);
+  const insert = tenantClient => query('INSERT INTO audit_events (organization_id, actor_id, action, entity_type, entity_id, metadata, ip) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING id,action,entity_type "entityType",entity_id "entityId",metadata,previous_hash "previousHash",event_hash "eventHash",created_at "createdAt"', [req.auth.org, req.auth.sub, action, entityType, entityId, metadata, req.ip], tenantClient);
+  const result = client ? await insert(client) : await withTenant(req.auth.org, insert);
+  const event = result.rows[0] || null;
   emitSecurityEvent({ organizationId:req.auth.org, actorId:req.auth.sub, action, entityType, entityId, metadata }).catch(error => console.error(JSON.stringify({ level:'error', event:'siem.delivery_failed', message:error.message })));
+  return event;
 }
 function asyncRoute(handler) { return (req, res, next) => Promise.resolve(handler(req, res, next)).catch(next); }
 function httpError(status, title) { const error = new Error(title); error.status = status; return error; }
@@ -172,6 +175,159 @@ app.get('/api/v1/dashboard/summary', requireAuth, asyncRoute(async (req, res) =>
   res.json({ summary, generatedAt: new Date().toISOString() });
 }));
 
+const kpiSubscribers = new Map();
+function toNonNegativeBigInt(value) {
+  const text = String(value == null ? '0' : value);
+  return /^\d+$/.test(text) ? BigInt(text) : 0n;
+}
+function formatBytes(value) {
+  const bytes = toNonNegativeBigInt(value);
+  const units = ['B','KB','MB','GB','TB','PB'];
+  let amount = Number(bytes);
+  let index = 0;
+  while (amount >= 1024 && index < units.length - 1) {
+    amount /= 1024;
+    index += 1;
+  }
+  return amount.toFixed(index ? 1 : 0) + ' ' + units[index];
+}
+function configuredStorageCapacity() {
+  const value = process.env.STORAGE_CAPACITY_BYTES;
+  return /^\d+$/.test(value || '') && toNonNegativeBigInt(value) > 0n ? value : null;
+}
+function storagePercent(used, capacity) {
+  const usedBytes = toNonNegativeBigInt(used);
+  const capacityBytes = toNonNegativeBigInt(capacity);
+  if (!capacityBytes) return null;
+  return Number((usedBytes * 10000n) / capacityBytes) / 100;
+}
+async function loadKpiSnapshot(organizationId) {
+  const capacity = configuredStorageCapacity();
+  return withTenant(organizationId, async client => {
+    const [cases, evidence, auditEvents, chain] = await Promise.all([
+      client.query(`SELECT
+        count(*) FILTER (WHERE status NOT IN ('Closed','Closing'))::int AS active_cases,
+        count(*) FILTER (WHERE priority='Critical' AND status NOT IN ('Closed','Closing'))::int AS critical_alerts,
+        count(*) FILTER (WHERE status='In Review')::int AS cases_in_review,
+        count(*) FILTER (WHERE created_at >= date_trunc('month', now()))::int AS cases_this_month
+        FROM cases WHERE organization_id=$1`, [organizationId]),
+      client.query(`SELECT count(*)::int AS evidence_items,
+        count(*) FILTER (WHERE plaintext_sha256 ~ '^[0-9a-f]{64}$')::int AS verified_hashes,
+        coalesce(sum(size_bytes),0)::text AS storage_bytes
+        FROM evidence_objects WHERE organization_id=$1`, [organizationId]),
+      client.query(`SELECT count(*) FILTER (WHERE created_at >= now()-interval '24 hours')::int AS events_24h,
+        max(created_at) AS last_event_at FROM audit_events WHERE organization_id=$1`, [organizationId]),
+      client.query('SELECT centinell_verify_audit_chain($1) AS valid', [organizationId])
+    ]);
+    const caseRow = cases.rows[0] || {};
+    const evidenceRow = evidence.rows[0] || {};
+    const auditRow = auditEvents.rows[0] || {};
+    const totalEvidence = Number(evidenceRow.evidence_items || 0);
+    const verifiedHashes = Number(evidenceRow.verified_hashes || 0);
+    const pendingIntake = Math.max(totalEvidence - verifiedHashes, 0);
+    const usedBytes = String(evidenceRow.storage_bytes || '0');
+    return {
+      version: PLATFORM_VERSION,
+      generatedAt: new Date().toISOString(),
+      source: 'tenant_database',
+      tenantScoped: true,
+      kpis: {
+        activeCases: Number(caseRow.active_cases || 0),
+        criticalAlerts: Number(caseRow.critical_alerts || 0),
+        casesInReview: Number(caseRow.cases_in_review || 0),
+        casesThisMonth: Number(caseRow.cases_this_month || 0),
+        totalEvidenceItems: totalEvidence,
+        verifiedHashes,
+        pendingIntake,
+        storageUsedBytes: usedBytes,
+        storageUsedLabel: formatBytes(usedBytes),
+        storageCapacityBytes: capacity,
+        storageCapacityLabel: capacity ? formatBytes(capacity) : null,
+        assetsAtRisk: null
+      },
+      evidenceIntegrity: {
+        algorithm: 'SHA-256',
+        totalItems: totalEvidence,
+        verifiedHashes,
+        pendingIntake,
+        percentage: totalEvidence ? Number((verifiedHashes * 100 / totalEvidence).toFixed(2)) : 100
+      },
+      storage: {
+        usedBytes,
+        usedLabel: formatBytes(usedBytes),
+        allocatedBytes: capacity,
+        allocatedLabel: capacity ? formatBytes(capacity) : null,
+        utilizationPercent: storagePercent(usedBytes, capacity)
+      },
+      audit: {
+        events24h: Number(auditRow.events_24h || 0),
+        lastEventAt: auditRow.last_event_at || null,
+        chainValid: Boolean(chain.rows[0] && chain.rows[0].valid)
+      },
+      unavailableMetrics: ['assetsAtRisk']
+    };
+  });
+}
+function sendKpiEvent(response, eventName, payload) {
+  if (response.writableEnded || response.destroyed) return false;
+  response.write('event: ' + eventName + '\ndata: ' + JSON.stringify(payload) + '\n\n');
+  return true;
+}
+function publishKpiEvent(organizationId, payload) {
+  const subscribers = kpiSubscribers.get(organizationId);
+  if (!subscribers) return;
+  subscribers.forEach(response => {
+    try {
+      if (!sendKpiEvent(response, 'kpi.event', payload)) subscribers.delete(response);
+    } catch (_) {
+      subscribers.delete(response);
+    }
+  });
+  if (!subscribers.size) kpiSubscribers.delete(organizationId);
+}
+
+app.get('/api/v1/dashboard/kpis', requireAuth, asyncRoute(async (req, res) => {
+  res.json(await loadKpiSnapshot(req.auth.org));
+}));
+
+app.get('/api/v1/dashboard/kpis/stream', requireAuth, asyncRoute(async (req, res) => {
+  res.status(200).set({
+    'Content-Type': 'text/event-stream; charset=utf-8',
+    'Cache-Control': 'no-cache, no-store, must-revalidate',
+    'Connection': 'keep-alive',
+    'X-Accel-Buffering': 'no'
+  });
+  if (typeof res.flushHeaders === 'function') res.flushHeaders();
+  req.setTimeout(0);
+  const subscribers = kpiSubscribers.get(req.auth.org) || new Set();
+  subscribers.add(res);
+  kpiSubscribers.set(req.auth.org, subscribers);
+  let closed = false;
+  let heartbeat;
+  let refresh;
+  const cleanup = () => {
+    if (closed) return;
+    closed = true;
+    clearInterval(heartbeat);
+    clearInterval(refresh);
+    subscribers.delete(res);
+    if (!subscribers.size) kpiSubscribers.delete(req.auth.org);
+  };
+  req.on('close', cleanup);
+  const pushSnapshot = async () => {
+    try {
+      const snapshot = await loadKpiSnapshot(req.auth.org);
+      if (!closed) sendKpiEvent(res, 'kpi.snapshot', snapshot);
+    } catch (error) {
+      if (!closed) sendKpiEvent(res, 'kpi.error', { version: PLATFORM_VERSION, title: 'KPI snapshot unavailable', status: 503 });
+      console.error(JSON.stringify({ level:'error', event:'dashboard.kpi_snapshot_failed', message:error.message }));
+    }
+  };
+  await pushSnapshot();
+  heartbeat = setInterval(() => { if (!closed) res.write(': keep-alive\n\n'); }, 15000);
+  refresh = setInterval(pushSnapshot, 30000);
+}));
+
 app.get('/api/v1/command/modules', requireAuth, (_req, res) => res.json({ modules:[
   { id:'operations-volume', route:'soc', capability:'Tenant-scoped SOC telemetry and investigation' },
   { id:'priority-activity', route:'soc', capability:'Alert triage and correlated activity' },
@@ -187,6 +343,181 @@ app.get('/api/v1/evidence', requireAuth, asyncRoute(async (req, res) => {
     FROM evidence_objects e JOIN cases c ON c.id=e.case_id
     WHERE e.organization_id=$1 ORDER BY e.created_at DESC LIMIT 200`, [req.auth.org]));
   res.json({ evidence: result.rows });
+}));
+
+const evidenceDetailProjection = 'SELECT e.id,e.object_key "objectKey",e.plaintext_sha256 "sha256",e.ciphertext_sha256 "ciphertextSha256",e.cipher,e.kms_key_id "kmsKeyId",e.size_bytes::text "sizeBytes",e.created_at "createdAt",e.created_by "createdById",u.full_name "createdByName",u.email "createdByEmail",c.id "caseId",c.case_number "caseNumber",c.title "caseTitle" FROM evidence_objects e JOIN cases c ON c.id=e.case_id LEFT JOIN users u ON u.id=e.created_by';
+function isSha256(value) {
+  return /^[0-9a-f]{64}$/i.test(String(value || ''));
+}
+function acquisitionMetadata(row) {
+  return {
+    objectKey: row.objectKey,
+    caseId: row.caseId,
+    caseNumber: row.caseNumber,
+    caseTitle: row.caseTitle,
+    sha256: row.sha256,
+    ciphertextSha256: row.ciphertextSha256,
+    cipher: row.cipher,
+    kmsKeyId: row.kmsKeyId,
+    sizeBytes: row.sizeBytes,
+    createdAt: row.createdAt,
+    createdBy: { id: row.createdById, name: row.createdByName, email: row.createdByEmail }
+  };
+}
+async function loadEvidenceDetail(organizationId, evidenceKey) {
+  return withTenant(organizationId, async client => {
+    const result = await client.query(evidenceDetailProjection + ' WHERE e.organization_id=$1 AND (e.object_key=$2 OR e.id::text=$2) LIMIT 1', [organizationId, evidenceKey]);
+    if (!result.rowCount) return null;
+    const row = result.rows[0];
+    const events = await client.query('SELECT id,action,entity_type,entity_id,metadata,event_hash,previous_hash,created_at FROM audit_events WHERE organization_id=$1 AND (entity_id=$2 OR entity_id=$3 OR metadata->>$4=$2 OR metadata->>$5=$2) ORDER BY created_at DESC LIMIT 100', [organizationId, evidenceKey, row.id, 'objectKey', 'evidenceKey']);
+    const chain = await client.query('SELECT centinell_verify_audit_chain($1) AS valid', [organizationId]);
+    const verified = isSha256(row.sha256);
+    return {
+      version: PLATFORM_VERSION,
+      generatedAt: new Date().toISOString(),
+      source: 'tenant_database',
+      tenantScoped: true,
+      evidence: row,
+      acquisitionMetadata: acquisitionMetadata(row),
+      processing: {
+        status: verified ? 'verified' : 'pending_verification',
+        algorithm: 'SHA-256',
+        hashPresent: verified,
+        retryAvailable: !verified
+      },
+      history: events.rows.map(event => ({
+        id: event.id,
+        event: event.action,
+        action: event.action,
+        entityType: event.entity_type,
+        entityId: event.entity_id,
+        reference: event.entity_id,
+        metadata: event.metadata,
+        eventHash: event.event_hash,
+        previousHash: event.previous_hash,
+        timestamp: event.created_at
+      })),
+      audit: {
+        chainValid: Boolean(chain.rows[0] && chain.rows[0].valid),
+        events: events.rows
+      }
+    };
+  });
+}
+app.get('/api/v1/evidence/:evidenceKey', requireAuth, asyncRoute(async (req, res) => {
+  const detail = await loadEvidenceDetail(req.auth.org, String(req.params.evidenceKey));
+  if (!detail) return res.status(404).json({ title: 'Evidence is not available in this tenant', status: 404 });
+  res.json(detail);
+}));
+
+const hashRetrySchema = z.object({
+  reason: z.string().trim().min(1).max(240).default('KPI drawer retry action')
+});
+app.post('/api/v1/evidence/:evidenceKey/retry', requireAuth, allow('admin','analyst'), asyncRoute(async (req, res) => {
+  const input = hashRetrySchema.parse(req.body || {});
+  const evidenceKey = String(req.params.evidenceKey);
+  const accepted = await transaction(async client => {
+    await client.query("SELECT set_config('app.current_organization_id',$1,true)", [req.auth.org]);
+    const result = await client.query(evidenceDetailProjection + ' WHERE e.organization_id=$1 AND (e.object_key=$2 OR e.id::text=$2) LIMIT 1', [req.auth.org, evidenceKey]);
+    if (!result.rowCount) throw httpError(404, 'Evidence is not available in this tenant');
+    const row = result.rows[0];
+    if (isSha256(row.sha256)) throw httpError(409, 'Evidence hash is already verified; no retry was queued');
+    const retryRequestId = crypto.randomUUID();
+    const event = await audit(req, 'evidence.hash_retry_requested', 'evidence', row.id, {
+      evidenceKey: row.objectKey,
+      caseNumber: row.caseNumber,
+      algorithm: 'SHA-256',
+      retryRequestId,
+      reason: input.reason,
+      immutableEvidence: true
+    }, client);
+    return { row, event, retryRequestId };
+  });
+  requestAuditAnchor(req.auth.org);
+  publishKpiEvent(req.auth.org, {
+    version: PLATFORM_VERSION,
+    type: 'evidence.hash_retry_requested',
+    generatedAt: new Date().toISOString(),
+    evidenceKey: accepted.row.objectKey,
+    retryRequestId: accepted.retryRequestId,
+    auditEventId: accepted.event && accepted.event.id,
+    auditEventHash: accepted.event && accepted.event.eventHash
+  });
+  let snapshot = null;
+  try { snapshot = await loadKpiSnapshot(req.auth.org); } catch (_) {}
+  res.status(202).json({
+    version: PLATFORM_VERSION,
+    accepted: true,
+    status: 'retry_requested',
+    retryRequestId: accepted.retryRequestId,
+    evidence: accepted.row,
+    acquisitionMetadata: acquisitionMetadata(accepted.row),
+    processing: { status: 'pending_verification', algorithm: 'SHA-256', hashUnchanged: true, retryAvailable: true },
+    audit: {
+      chainStatus: 'event_appended',
+      event: accepted.event,
+      eventHash: accepted.event && accepted.event.eventHash,
+      previousHash: accepted.event && accepted.event.previousHash
+    },
+    kpis: snapshot ? snapshot.kpis : null
+  });
+}));
+
+const custodyStateSchema = z.object({
+  status: z.enum(['in_review','legal_hold','released']).default('in_review'),
+  reason: z.string().trim().min(1).max(240).default('KPI drawer custody action')
+});
+app.post('/api/v1/evidence/:evidenceKey/custody-state', requireAuth, allow('admin','analyst'), asyncRoute(async (req, res) => {
+  const input = custodyStateSchema.parse(req.body || {});
+  const evidenceKey = String(req.params.evidenceKey);
+  const accepted = await transaction(async client => {
+    await client.query("SELECT set_config('app.current_organization_id',$1,true)", [req.auth.org]);
+    const result = await client.query(evidenceDetailProjection + ' WHERE e.organization_id=$1 AND (e.object_key=$2 OR e.id::text=$2) LIMIT 1', [req.auth.org, evidenceKey]);
+    if (!result.rowCount) throw httpError(404, 'Evidence is not available in this tenant');
+    const row = result.rows[0];
+    const event = await audit(req, 'evidence.custody_state_recorded', 'evidence', row.id, {
+      evidenceKey: row.objectKey,
+      caseNumber: row.caseNumber,
+      custodyState: input.status,
+      reason: input.reason,
+      appendOnly: true
+    }, client);
+    return { row, event };
+  });
+  requestAuditAnchor(req.auth.org);
+  publishKpiEvent(req.auth.org, {
+    version: PLATFORM_VERSION,
+    type: 'evidence.custody_state_recorded',
+    generatedAt: new Date().toISOString(),
+    evidenceKey: accepted.row.objectKey,
+    custodyState: input.status,
+    auditEventId: accepted.event && accepted.event.id,
+    auditEventHash: accepted.event && accepted.event.eventHash
+  });
+  res.status(202).json({
+    version: PLATFORM_VERSION,
+    accepted: true,
+    status: 'custody_state_recorded',
+    custodyState: input.status,
+    evidence: accepted.row,
+    acquisitionMetadata: acquisitionMetadata(accepted.row),
+    history: [{
+      id: accepted.event && accepted.event.id,
+      event: accepted.event && accepted.event.action,
+      action: accepted.event && accepted.event.action,
+      status: input.status,
+      reference: accepted.row.objectKey,
+      timestamp: accepted.event && accepted.event.createdAt,
+      eventHash: accepted.event && accepted.event.eventHash,
+      previousHash: accepted.event && accepted.event.previousHash
+    }],
+    audit: {
+      chainStatus: 'event_appended',
+      event: accepted.event,
+      eventHash: accepted.event && accepted.event.eventHash,
+      previousHash: accepted.event && accepted.event.previousHash
+    }
+  });
 }));
 
 const corporateModules = ['ai-operations','operator-support','crm','websites','social-intelligence','call-reviews'];
@@ -278,6 +609,13 @@ app.post('/api/v1/cases', requireAuth, allow('admin','analyst'), asyncRoute(asyn
     const result = await client.query('INSERT INTO cases (organization_id,case_number,title,case_type,priority,description,created_by) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING id,case_number "caseNumber",title,case_type "caseType",priority,status,description,created_at "createdAt"', [req.auth.org, seq.rows[0].value, input.title, input.caseType, input.priority, input.description, req.auth.sub]);
     await audit(req, 'case.created', 'case', result.rows[0].id, { caseNumber: result.rows[0].caseNumber }, client);
     return result.rows[0];
+  });
+  publishKpiEvent(req.auth.org, {
+    version: PLATFORM_VERSION,
+    type: 'case.created',
+    generatedAt: new Date().toISOString(),
+    caseNumber: created.caseNumber,
+    caseId: created.id
   });
   res.status(201).json({ case: created });
 }));
@@ -416,7 +754,7 @@ app.get('/metrics', (req, res) => {
 
 const frontendPath = path.join(__dirname, '..', '..');
 const publicStatic = express.static(frontendPath, { extensions: ['html'], maxAge: process.env.NODE_ENV === 'production' ? '1h' : 0 });
-const publicRootFiles = new Set(['/','/index.html','/technical-analysis','/technical-analysis.html','/app.js','/card-navigation.js','/enterprise-dashboard.js','/forensic-advisor.js','/forensic-copilot.js']);
+const publicRootFiles = new Set(['/','/index.html','/technical-analysis','/technical-analysis.html','/app.js','/card-navigation.js','/enterprise-dashboard.js','/forensic-advisor.js','/forensic-copilot.js','/interactive-workbench.js']);
 const publicDirectories = /^(?:\/assets|\/core|\/router|\/services|\/state|\/ui|\/utils)\/[A-Za-z0-9._/-]+$/;
 const isPublicPath = pathname => publicRootFiles.has(pathname) || (publicDirectories.test(pathname) && !pathname.split('/').includes('..') && !/%2e/i.test(pathname));
 app.use((req, res, next) => isPublicPath(req.path) ? publicStatic(req, res, next) : next());

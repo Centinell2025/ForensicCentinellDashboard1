@@ -53,6 +53,28 @@ paths:
       responses:
         '200': { description: Current dashboard summary }
         '401': { $ref: '#/components/responses/Problem' }
+  /dashboard/kpis:
+    get:
+      summary: Return live tenant-scoped KPI snapshot
+      description: Counts are read from existing tenant tables and the existing hash-chained audit verifier. No custody or evidence row is written.
+      security: [{ cookieAuth: [] }]
+      responses:
+        '200':
+          description: Current KPI snapshot with UTC generation time
+          content:
+            application/json: { schema: { $ref: '#/components/schemas/KpiSnapshot' } }
+        '401': { $ref: '#/components/responses/Problem' }
+  /dashboard/kpis/stream:
+    get:
+      summary: Stream tenant-scoped KPI events over Server-Sent Events
+      description: The stream sends kpi.snapshot, kpi.event, and keep-alive frames. A session cookie supplies tenant context.
+      security: [{ cookieAuth: [] }]
+      responses:
+        '200':
+          description: Event stream
+          content:
+            text/event-stream: { schema: { type: string } }
+        '401': { $ref: '#/components/responses/Problem' }
   /evidence:
     get:
       summary: List safe evidence metadata without cryptographic key material
@@ -60,6 +82,68 @@ paths:
       responses:
         '200': { description: Tenant evidence metadata }
         '401': { $ref: '#/components/responses/Problem' }
+  /evidence/{evidenceKey}:
+    get:
+      summary: Return tenant-scoped evidence metadata and audit history
+      description: Returns acquisition metadata, SHA-256 processing state, audit hashes, and chain status without IVs, authentication tags, or encrypted data keys.
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - { name: evidenceKey, in: path, required: true, schema: { type: string, minLength: 1, maxLength: 240 } }
+      responses:
+        '200':
+          description: Evidence drawer detail
+          content:
+            application/json: { schema: { $ref: '#/components/schemas/EvidenceDetail' } }
+        '401': { $ref: '#/components/responses/Problem' }
+        '404': { $ref: '#/components/responses/Problem' }
+  /evidence/{evidenceKey}/retry:
+    post:
+      summary: Request an audited SHA-256 processing retry
+      description: Admin and analyst action. Appends one hash-chained audit event and leaves evidence, custody, RLS policies, and existing hashes unchanged until a separate processing worker completes.
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - { name: evidenceKey, in: path, required: true, schema: { type: string, minLength: 1, maxLength: 240 } }
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason: { type: string, minLength: 1, maxLength: 240 }
+      responses:
+        '202':
+          description: Retry intent accepted and audited
+          content:
+            application/json: { schema: { $ref: '#/components/schemas/HashRetryResponse' } }
+        '401': { $ref: '#/components/responses/Problem' }
+        '403': { $ref: '#/components/responses/Problem' }
+        '404': { $ref: '#/components/responses/Problem' }
+        '409': { $ref: '#/components/responses/Problem' }
+  /evidence/{evidenceKey}/custody-state:
+    post:
+      summary: Record an append-only tenant custody state event
+      description: Admin and analyst action. Adds a hash-chained audit event for a custody transition without rewriting the evidence object, existing custody history, RLS policies, or database schema.
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - { name: evidenceKey, in: path, required: true, schema: { type: string, minLength: 1, maxLength: 240 } }
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status: { type: string, enum: [in_review, legal_hold, released] }
+                reason: { type: string, minLength: 1, maxLength: 240 }
+      responses:
+        '202':
+          description: Custody state event accepted and audited
+          content:
+            application/json: { schema: { $ref: '#/components/schemas/CustodyStateResponse' } }
+        '401': { $ref: '#/components/responses/Problem' }
+        '403': { $ref: '#/components/responses/Problem' }
+        '404': { $ref: '#/components/responses/Problem' }
   /analysis:
     get:
       summary: Correlate cases, evidence metadata, and hash-chained audit events
@@ -202,6 +286,99 @@ components:
         toolVersion: { type: string }
         createdAt: { type: string, format: date-time }
         verifiedAt: { type: string, format: date-time, nullable: true }
+    KpiSnapshot:
+      type: object
+      required: [version, generatedAt, tenantScoped, kpis, evidenceIntegrity, storage, audit]
+      properties:
+        version: { type: string, const: 1.1.0 }
+        generatedAt: { type: string, format: date-time }
+        source: { type: string, const: tenant_database }
+        tenantScoped: { type: boolean, const: true }
+        kpis:
+          type: object
+          properties:
+            activeCases: { type: integer, minimum: 0 }
+            criticalAlerts: { type: integer, minimum: 0 }
+            casesInReview: { type: integer, minimum: 0 }
+            casesThisMonth: { type: integer, minimum: 0 }
+            totalEvidenceItems: { type: integer, minimum: 0 }
+            verifiedHashes: { type: integer, minimum: 0 }
+            pendingIntake: { type: integer, minimum: 0 }
+            storageUsedBytes: { type: string, pattern: '^[0-9]+$' }
+            storageUsedLabel: { type: string }
+            assetsAtRisk: { type: integer, nullable: true }
+        evidenceIntegrity:
+          type: object
+          properties:
+            algorithm: { type: string, const: SHA-256 }
+            totalItems: { type: integer }
+            verifiedHashes: { type: integer }
+            pendingIntake: { type: integer }
+            percentage: { type: number }
+        storage:
+          type: object
+          properties:
+            usedBytes: { type: string, pattern: '^[0-9]+$' }
+            allocatedBytes: { type: string, nullable: true, pattern: '^[0-9]+$' }
+            utilizationPercent: { type: number, nullable: true }
+        audit:
+          type: object
+          properties:
+            events24h: { type: integer }
+            lastEventAt: { type: string, format: date-time, nullable: true }
+            chainValid: { type: boolean }
+    EvidenceDetail:
+      type: object
+      required: [version, generatedAt, tenantScoped, evidence, acquisitionMetadata, processing, history, audit]
+      properties:
+        version: { type: string, const: 1.1.0 }
+        generatedAt: { type: string, format: date-time }
+        tenantScoped: { type: boolean, const: true }
+        evidence: { type: object, description: Safe evidence projection; cryptographic key material is omitted. }
+        acquisitionMetadata: { type: object }
+        processing:
+          type: object
+          properties:
+            status: { type: string, enum: [pending_verification, verified] }
+            algorithm: { type: string, const: SHA-256 }
+            hashPresent: { type: boolean }
+            retryAvailable: { type: boolean }
+        history: { type: array, items: { type: object } }
+        audit:
+          type: object
+          properties:
+            chainValid: { type: boolean }
+            events: { type: array, items: { type: object } }
+    HashRetryResponse:
+      type: object
+      required: [version, accepted, status, retryRequestId, processing, audit]
+      properties:
+        version: { type: string, const: 1.1.0 }
+        accepted: { type: boolean, const: true }
+        status: { type: string, const: retry_requested }
+        retryRequestId: { type: string, format: uuid }
+        evidence: { type: object }
+        acquisitionMetadata: { type: object }
+        processing:
+          type: object
+          properties:
+            status: { type: string, const: pending_verification }
+            algorithm: { type: string, const: SHA-256 }
+            hashUnchanged: { type: boolean, const: true }
+            retryAvailable: { type: boolean }
+        audit: { type: object }
+    CustodyStateResponse:
+      type: object
+      required: [version, accepted, status, custodyState, history, audit]
+      properties:
+        version: { type: string, const: 1.1.0 }
+        accepted: { type: boolean, const: true }
+        status: { type: string, const: custody_state_recorded }
+        custodyState: { type: string, enum: [in_review, legal_hold, released] }
+        evidence: { type: object }
+        acquisitionMetadata: { type: object }
+        history: { type: array, items: { type: object } }
+        audit: { type: object }
   responses:
     Problem:
       description: RFC 7807-style problem response
