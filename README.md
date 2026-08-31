@@ -60,7 +60,7 @@ The dashboard provides the client-side DFIR workspace and does not claim to be a
 - Evidence provenance fields, UTC normalization indicators, analyst notes, peer-review fields, and TXT export.
 - Browser-side SHA-256 verification for a selected file, clearly marked as a local fingerprint.
 - Chain-of-custody integrity verification and investigative panel routing.
-- v1.1.0 universal KPI/record drawers with UTC-normalized metadata, live SSE/polling updates, security-state tooltips, and table filter pills.
+- v1.1.0 universal KPI/record drawers with UTC-normalized metadata, live SSE/polling updates, RAM-style intensity/severity bars, security-state tooltips, and table filter pills. Production intensity uses existing tenant counts plus optional `KPI_ACTIVE_CASE_CAPACITY`, `KPI_CRITICAL_ALERT_THRESHOLD`, `KPI_EVIDENCE_CAPACITY`, `KPI_PENDING_INTAKE_THRESHOLD`, and `KPI_REVIEW_CAPACITY` settings; unavailable sources remain explicit nulls.
 - Tenant-scoped KPI, evidence-detail, and append-only SHA-256 retry contracts documented in api/openapi.yaml; the retry request never rewrites evidence or custody data.
 - Federal digital-evidence reference panels in Risk & Compliance and Reports covering FRE 902(13)/(14), FRCP 34/37 and litigation hold, SCA §2701 et seq., HIPAA Security Rule, and SOX with an explicit DFIR limitation notice.
 - Persistent Vulnerabilities and Asset Intelligence filters.

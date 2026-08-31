@@ -288,7 +288,7 @@ components:
         verifiedAt: { type: string, format: date-time, nullable: true }
     KpiSnapshot:
       type: object
-      required: [version, generatedAt, tenantScoped, kpis, evidenceIntegrity, storage, audit]
+      required: [version, generatedAt, tenantScoped, kpis, evidenceIntegrity, intensity, storage, audit]
       properties:
         version: { type: string, const: 1.1.0 }
         generatedAt: { type: string, format: date-time }
@@ -315,6 +315,18 @@ components:
             verifiedHashes: { type: integer }
             pendingIntake: { type: integer }
             percentage: { type: number }
+        intensity:
+          type: object
+          description: Live RAM-style analytical load or integrity coverage. Percentages are derived from tenant data and configured service capacities; unavailable sources are explicit nulls.
+          additionalProperties:
+            type: object
+            required: [percent, label, semantic, severity, basis]
+            properties:
+              percent: { type: number, minimum: 0, maximum: 100, nullable: true }
+              label: { type: string }
+              semantic: { type: string, enum: [load, coverage] }
+              severity: { type: string, enum: [low, medium, high, critical, verified, unavailable] }
+              basis: { type: string }
         storage:
           type: object
           properties:

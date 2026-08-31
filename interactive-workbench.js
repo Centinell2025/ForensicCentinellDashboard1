@@ -172,6 +172,157 @@
     return String(value);
   }
 
+  function clampPercent(value) {
+    var number = Number(value);
+    if (!isFinite(number)) return null;
+    return Math.max(0, Math.min(100, Math.round(number * 100) / 100));
+  }
+
+  function numericMetric(value) {
+    var match = String(value === undefined || value === null ? '' : value).replace(/,/g, '').match(/-?\d+(?:\.\d+)?/);
+    return match ? Number(match[0]) : null;
+  }
+
+  function intensitySeverity(percent, status, semantic) {
+    if (percent === null) return 'unavailable';
+    if (semantic === 'coverage') {
+      if (percent >= 99.99) return 'verified';
+      if (percent >= 95) return 'low';
+      if (percent >= 85) return 'medium';
+      return 'critical';
+    }
+    if (status === 'critical') return 'critical';
+    if (status === 'high') return 'high';
+    if (status === 'warning') return percent >= 75 ? 'high' : 'medium';
+    if (percent >= 90) return 'critical';
+    if (percent >= 75) return 'high';
+    if (percent >= 50) return 'medium';
+    return 'low';
+  }
+
+  function unavailableIntensity(reason) {
+    return { percent: null, label: 'Source unavailable', semantic: 'load', severity: 'unavailable', basis: reason || 'No authorized intensity value was returned.' };
+  }
+
+  function previewIntensity(meta) {
+    var key = metricDataKey(meta.label);
+    var number = numericMetric(meta.value);
+    var percent = null;
+    var semantic = 'load';
+    var basis = 'Preview baseline derived from the existing local dataset; connect the tenant API for production intensity.';
+    if (key === 'activeCases' && number !== null) {
+      percent = number / 40 * 100;
+      basis = number + ' active cases against a preview operating baseline of 40.';
+    } else if (key === 'criticalAlerts' && number !== null) {
+      percent = number / 8 * 100;
+      basis = number + ' open critical cases against a preview attention threshold of 8.';
+    } else if (key === 'assetsAtRisk' && number !== null) {
+      percent = number / 20 * 100;
+      basis = number + ' at-risk assets against a preview review capacity of 20; production requires an authorized asset source.';
+    } else if (key === 'evidenceIntegrity') {
+      percent = number;
+      semantic = 'coverage';
+      basis = 'SHA-256 verification coverage shown by the existing preview card.';
+    } else if (key === 'totalEvidenceItems' && number !== null) {
+      percent = number / 500 * 100;
+      basis = number + ' evidence items against a preview intake capacity of 500.';
+    } else if (key === 'verifiedHashes') {
+      var coverageMatch = String(meta.text || '').match(/(\d+(?:\.\d+)?)\s*%/);
+      percent = coverageMatch ? Number(coverageMatch[1]) : (meta.status === 'good' ? 100 : null);
+      semantic = 'coverage';
+      basis = coverageMatch ? coverageMatch[1] + '% verified-hash coverage reported by the preview card.' : 'Verified-hash coverage was not asserted by the preview card.';
+    } else if (key === 'pendingIntake' && number !== null) {
+      percent = number / 10 * 100;
+      basis = number + ' pending intake records against a preview processing queue threshold of 10.';
+    } else if (key === 'storageUsed') {
+      var storageMatch = String(meta.text || '').match(/([\d.]+)\s*(KB|MB|GB|TB|PB)\s+of\s+([\d.]+)\s*(KB|MB|GB|TB|PB)/i);
+      if (storageMatch) percent = Number(storageMatch[1]) / Number(storageMatch[3]) * 100;
+      basis = storageMatch ? storageMatch[1] + ' ' + storageMatch[2].toUpperCase() + ' used of ' + storageMatch[3] + ' ' + storageMatch[4].toUpperCase() + ' allocated in the preview card.' : basis;
+    } else if (key === 'casesInReview' && number !== null) {
+      percent = number / 25 * 100;
+      basis = number + ' cases in review against a preview review capacity of 25.';
+    }
+    percent = clampPercent(percent);
+    return {
+      percent: percent,
+      label: percent === null ? 'Source unavailable' : (semantic === 'coverage' ? percent + '% coverage' : percent + '% intensity'),
+      semantic: semantic,
+      severity: intensitySeverity(percent, meta.status, semantic),
+      basis: basis
+    };
+  }
+
+  function intensitySpecFor(meta, payload) {
+    var key = metricDataKey(meta.label);
+    var candidates = [payload && payload.intensity, state.snapshot && state.snapshot.intensity];
+    for (var index = 0; index < candidates.length; index += 1) {
+      var source = candidates[index];
+      if (source && source[key]) return source[key];
+    }
+    return STATIC_PREVIEW ? previewIntensity(meta) : unavailableIntensity('The tenant KPI service did not return an intensity value for this metric.');
+  }
+
+  function ensureIntensityBar(card) {
+    var bar = card.querySelector('.kpi-intensity');
+    if (bar) return bar;
+    bar = document.createElement('div');
+    bar.className = 'kpi-intensity';
+    bar.setAttribute('data-kpi-intensity', 'true');
+    bar.setAttribute('role', 'progressbar');
+    bar.setAttribute('tabindex', '0');
+    bar.setAttribute('aria-valuemin', '0');
+    bar.setAttribute('aria-valuemax', '100');
+    var label = document.createElement('span');
+    label.className = 'kpi-intensity-label';
+    var value = document.createElement('span');
+    value.className = 'kpi-intensity-value';
+    var track = document.createElement('span');
+    track.className = 'kpi-intensity-track';
+    var fill = document.createElement('span');
+    fill.className = 'kpi-intensity-fill';
+    track.appendChild(fill);
+    bar.appendChild(label);
+    bar.appendChild(value);
+    bar.appendChild(track);
+    var metric = card.querySelector('.metric, .value');
+    if (metric && metric.parentNode) metric.parentNode.insertBefore(bar, metric.nextSibling);
+    else card.appendChild(bar);
+    return bar;
+  }
+
+  function applyIntensityBar(card, spec) {
+    if (!card) return;
+    var bar = ensureIntensityBar(card);
+    spec = spec || unavailableIntensity();
+    var percent = clampPercent(spec.percent);
+    var allowed = ['low', 'medium', 'high', 'critical', 'verified', 'unavailable'];
+    var severity = allowed.indexOf(spec.severity) >= 0 ? spec.severity : intensitySeverity(percent, '', spec.semantic);
+    var label = bar.querySelector('.kpi-intensity-label');
+    var value = bar.querySelector('.kpi-intensity-value');
+    var fill = bar.querySelector('.kpi-intensity-fill');
+    var isCoverage = spec.semantic === 'coverage';
+    bar.dataset.severity = severity;
+    bar.dataset.basis = spec.basis || 'Click to open tenant-scoped technical details.';
+    label.textContent = isCoverage ? 'Live coverage' : 'Live intensity';
+    value.textContent = percent === null ? 'Unavailable' : (percent + '%');
+    fill.style.width = percent === null ? '0%' : percent + '%';
+    if (percent === null) bar.removeAttribute('aria-valuenow');
+    else bar.setAttribute('aria-valuenow', String(percent));
+    bar.setAttribute('aria-valuetext', percent === null ? (spec.label || 'Source unavailable') : (spec.label || percent + '%'));
+    bar.setAttribute('aria-label', 'Open ' + metricLabel(card) + ' ' + (isCoverage ? 'coverage' : 'intensity') + ' details');
+    bar.title = (spec.label || (percent === null ? 'Source unavailable' : percent + '%')) + '. ' + (spec.basis || 'Click for technical details.');
+  }
+
+  function drawerIntensityMarkup(meta, payload) {
+    var spec = intensitySpecFor(meta, payload);
+    var percent = clampPercent(spec.percent);
+    var allowed = ['low', 'medium', 'high', 'critical', 'verified', 'unavailable'];
+    var severity = allowed.indexOf(spec.severity) >= 0 ? spec.severity : 'unavailable';
+    var coverage = spec.semantic === 'coverage';
+    var label = coverage ? 'Live coverage' : 'Live intensity';
+    return '<section class="kpi-drawer-intensity"><div class="kpi-drawer-intensity-head"><small>' + label + '</small><strong>' + escapeHtml(spec.label || (percent === null ? 'Source unavailable' : percent + '%')) + '</strong></div><div class="kpi-intensity" data-kpi-intensity="drawer" data-severity="' + severity + '" data-basis="' + escapeHtml(spec.basis || '') + '" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuetext="' + escapeHtml(spec.label || 'Source unavailable') + '" aria-label="' + escapeHtml('Live ' + (coverage ? 'coverage' : 'intensity') + ' for ' + meta.label) + '"><span class="kpi-intensity-label">' + label + '</span><span class="kpi-intensity-value">' + escapeHtml(percent === null ? 'Unavailable' : percent + '%') + '</span><span class="kpi-intensity-track"><span class="kpi-intensity-fill" style="width:' + (percent === null ? 0 : percent) + '%"></span></span></div><p>' + escapeHtml(spec.basis || 'No intensity basis was returned.') + '</p></section>';
+  }
+
   function localRetryStatus() {
     try {
       return global.localStorage.getItem(RETRY_KEY);
@@ -255,6 +406,10 @@
     style.textContent = [
       '.corporate-legal-strip{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:8px 18px;border-bottom:1px solid #22517f;background:linear-gradient(90deg,#082342,#0c2b54);color:#b9d3ec;font-size:10px;line-height:1.45}.corporate-legal-strip strong{color:#ffc75f;letter-spacing:.03em}.corporate-legal-strip span:last-child{text-align:right;color:#8fb0d1}.interactive-kpi{cursor:pointer;position:relative;transition:transform .18s,border-color .18s,box-shadow .18s}.interactive-kpi:hover,.interactive-kpi:focus-visible{transform:translateY(-3px);border-color:var(--cyan);box-shadow:0 18px 45px #0008,0 0 0 1px #71e4ff44;outline:none}.interactive-kpi[data-live-state="connected"]{border-color:#2d9b79}.interactive-kpi[data-live-state="warning"]{border-color:#9f7229}.interactive-kpi[data-live-state="error"]{border-color:#994555}.kpi-live-state{display:inline-flex;align-items:center;gap:5px;margin-top:8px;color:#9bb8d7;font-size:10px}.kpi-live-state:before{content:"";width:6px;height:6px;border-radius:50%;background:#40d69a;box-shadow:0 0 0 3px #40d69a22}.kpi-live-state[data-state="warning"]:before{background:#ffc15a;box-shadow:0 0 0 3px #ffc15a22}.kpi-live-state[data-state="error"]:before{background:#ff6980;box-shadow:0 0 0 3px #ff698022}.kpi-live-state[data-state="preview"]:before{background:#71e4ff;box-shadow:0 0 0 3px #71e4ff22}.kpi-security-signal{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;margin-left:6px;border:1px solid currentColor;border-radius:50%;font-size:9px;line-height:1;color:#9bb8d7;vertical-align:middle;cursor:help}.kpi-security-signal[data-security="critical"]{color:#ff6980}.kpi-security-signal[data-security="high"]{color:#ff9b6a}.kpi-security-signal[data-security="warning"]{color:#ffc15a}.kpi-security-signal[data-security="good"]{color:#40d69a}.kpi-security-signal[data-tooltip]{position:relative}.kpi-security-signal[data-tooltip]:hover:after,.kpi-security-signal[data-tooltip]:focus-visible:after{content:attr(data-tooltip);position:absolute;z-index:10010;left:20px;top:22px;width:220px;padding:8px;border:1px solid #3979ad;border-radius:8px;background:#03142b;color:#eef7ff;font-size:10px;font-weight:400;line-height:1.4;text-align:left;box-shadow:0 12px 30px #000a}.kpi-enhanced-row{cursor:pointer}.kpi-enhanced-row:hover,.kpi-enhanced-row:focus-visible{background:#2da9ff12;outline:2px solid #71e4ff55;outline-offset:-2px}.kpi-filter-pills{display:flex;flex-wrap:wrap;gap:7px;margin:0 0 10px}.kpi-filter-pill{border:1px solid #22517f;border-radius:999px;padding:6px 10px;background:#061d3a;color:#b9d3ec;font:700 10px/1.1 inherit;cursor:pointer;transition:background .18s,border-color .18s,color .18s}.kpi-filter-pill:hover,.kpi-filter-pill:focus-visible,.kpi-filter-pill[aria-pressed="true"]{border-color:var(--cyan);background:#2da9ff20;color:#eef7ff;outline:none}.kpi-pill-hidden{display:none!important}.kpi-drawer-backdrop{position:fixed;inset:0;z-index:9600;background:#010917aa;opacity:0;pointer-events:none;transition:opacity .2s}.kpi-drawer-backdrop.is-open{opacity:1;pointer-events:auto}.kpi-drawer{position:fixed;top:0;right:0;z-index:9650;display:flex;width:min(560px,100vw);height:100vh;flex-direction:column;background:linear-gradient(160deg,#103a6b,#061b37 66%,#041225);border-left:1px solid #3979ad;box-shadow:-24px 0 70px #000b;transform:translateX(102%);transition:transform .24s ease;visibility:hidden}.kpi-drawer.is-open{transform:translateX(0);visibility:visible}.kpi-drawer-head{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;padding:20px;border-bottom:1px solid var(--line)}.kpi-drawer-head small{color:var(--cyan);font-size:9px;font-weight:800;letter-spacing:.16em}.kpi-drawer-head h2{margin:5px 0 4px;font-size:21px}.kpi-drawer-head p{margin:0;color:var(--muted);font-size:11px}.kpi-drawer-close{flex:0 0 auto}.kpi-drawer-body{flex:1;overflow:auto;padding:18px 20px}.kpi-drawer-footer{display:flex;justify-content:space-between;align-items:center;gap:9px;padding:14px 20px;border-top:1px solid var(--line);background:#04172f}.kpi-drawer-footer a{color:var(--cyan);font-size:11px;text-decoration:none}.kpi-drawer-footer a:hover{text-decoration:underline}.kpi-drawer-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:0 0 16px}.kpi-drawer-card{min-width:0;padding:11px;border:1px solid var(--line);border-radius:10px;background:#061d3a}.kpi-drawer-card small{display:block;color:var(--muted);font-size:9px;text-transform:uppercase;letter-spacing:.07em}.kpi-drawer-card strong{display:block;margin-top:6px;color:#eef7ff;font-size:14px;overflow-wrap:anywhere}.kpi-drawer-section{margin:18px 0}.kpi-drawer-section h3{margin:0 0 9px;font-size:13px}.kpi-metadata{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.kpi-metadata div{padding:9px;border-bottom:1px solid #22517f44}.kpi-metadata dt{color:var(--muted);font-size:9px;text-transform:uppercase}.kpi-metadata dd{margin:4px 0 0;color:#eef7ff;font-size:11px;overflow-wrap:anywhere}.kpi-process{display:grid;gap:7px}.kpi-process-step{display:flex;align-items:flex-start;gap:9px;padding:9px;border:1px solid #22517f;border-radius:9px;background:#061d3a}.kpi-process-step i{display:grid;place-items:center;width:19px;height:19px;flex:0 0 19px;border-radius:50%;background:#2da9ff22;color:var(--cyan);font-size:10px;font-style:normal;font-weight:800}.kpi-history{width:100%;border-collapse:collapse;font-size:10px}.kpi-history th,.kpi-history td{padding:8px 5px;border-bottom:1px solid #22517f66;text-align:left;vertical-align:top}.kpi-history th{color:var(--muted);font-size:9px;text-transform:uppercase}.kpi-history td:first-child{white-space:nowrap;color:#b9d3ec}.kpi-history .good{color:var(--good)}.kpi-history .warning{color:var(--warn)}.kpi-history .critical{color:var(--bad)}.kpi-action-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:12px;border:1px solid #a56e2e;border-radius:10px;background:#3b290922}.kpi-action-row p{flex:1 1 100%;margin:0;color:#ffd79a;font-size:10px;line-height:1.45}.kpi-drawer-notice{padding:11px;border-left:3px solid var(--cyan);background:#2da9ff12;color:#b9d3ec;font-size:10px;line-height:1.5}.kpi-drawer-notice strong{color:#eef7ff}.kpi-drawer-loading{display:grid;gap:10px}.kpi-skeleton{height:46px;border-radius:9px;background:linear-gradient(90deg,#061d3a,#153f68,#061d3a);background-size:200% 100%;animation:kpi-skeleton 1.2s linear infinite}@keyframes kpi-skeleton{to{background-position:-200% 0}}.kpi-legal-panel{margin-top:16px}.kpi-legal-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}.kpi-legal-head h2{margin:0;font-size:18px}.kpi-legal-head p{margin:5px 0 0;color:var(--muted);font-size:11px;line-height:1.5}.kpi-legal-ref-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin-top:14px}.kpi-legal-ref{display:flex;min-height:120px;flex-direction:column;padding:11px;border:1px solid var(--line);border-radius:10px;background:#061d3a}.kpi-legal-ref h3{margin:0 0 4px;font-size:12px}.kpi-legal-ref p{margin:0;color:var(--muted);font-size:10px;line-height:1.45}.kpi-legal-ref span{margin-bottom:7px;color:var(--cyan);font-size:9px;text-transform:uppercase;letter-spacing:.06em}.kpi-legal-ref a{margin-top:auto;padding-top:9px;color:var(--cyan);font-size:10px;text-decoration:none}.kpi-legal-ref a:hover{text-decoration:underline}.kpi-legal-notice{margin-top:13px;padding:11px;border:1px solid #a56e2e;border-radius:9px;background:#3b290922;color:#ffd79a;font-size:10px;line-height:1.5}.kpi-legal-notice strong{color:#fff}.kpi-legal-export{margin-top:12px}.drawer-open{overflow:hidden}@media(max-width:700px){.corporate-legal-strip{display:block;padding:9px 14px}.corporate-legal-strip span{display:block}.corporate-legal-strip span:last-child{margin-top:4px;text-align:left}.kpi-drawer-grid,.kpi-metadata,.kpi-legal-ref-grid{grid-template-columns:1fr}.kpi-drawer-footer{align-items:flex-start;flex-direction:column}.kpi-drawer-head{padding:16px}.kpi-drawer-body{padding:15px 16px}}@media(prefers-reduced-motion:reduce){.interactive-kpi,.kpi-filter-pill,.kpi-drawer,.kpi-drawer-backdrop{transition:none}.kpi-skeleton{animation:none}.interactive-kpi:hover,.interactive-kpi:focus-visible{transform:none}}'];
     document.head.appendChild(style);
+    var intensityStyle = document.createElement('style');
+    intensityStyle.id = 'interactive-intensity-bar-styles';
+    intensityStyle.textContent = '.kpi-intensity{display:grid;grid-template-columns:1fr auto;gap:6px 9px;align-items:center;margin-top:11px;padding-top:9px;border-top:1px solid #22517f66;cursor:pointer}.kpi-intensity-label{color:#8fb0d1;font-size:9px;text-transform:uppercase;letter-spacing:.07em}.kpi-intensity-value{color:#eef7ff;font-size:9px;font-variant-numeric:tabular-nums}.kpi-intensity-track{grid-column:1/-1;position:relative;display:block;height:7px;overflow:hidden;border:1px solid #22517f;border-radius:999px;background:#03152d;box-shadow:inset 0 1px 4px #0008}.kpi-intensity-fill{display:block;height:100%;width:0;border-radius:inherit;background:linear-gradient(90deg,#40d69a,#71e4ff);box-shadow:0 0 13px #40d69a66;transition:width .45s ease,background .25s ease;animation:kpi-intensity-pulse 1.8s ease-in-out infinite alternate}.kpi-intensity-fill:after{content:"";position:absolute;inset:0 auto 0 -35%;width:35%;background:linear-gradient(90deg,transparent,#ffffffaa,transparent);transform:skewX(-18deg);animation:kpi-intensity-scan 2.1s linear infinite}.kpi-intensity[data-severity="low"] .kpi-intensity-fill{background:linear-gradient(90deg,#40d69a,#71e4ff)}.kpi-intensity[data-severity="medium"] .kpi-intensity-fill{background:linear-gradient(90deg,#71e4ff,#ffc15a);box-shadow:0 0 13px #ffc15a66}.kpi-intensity[data-severity="high"] .kpi-intensity-fill{background:linear-gradient(90deg,#ffc15a,#ff9b6a);box-shadow:0 0 13px #ff9b6a66}.kpi-intensity[data-severity="critical"] .kpi-intensity-fill{background:linear-gradient(90deg,#ff9b6a,#ff6980);box-shadow:0 0 13px #ff698066}.kpi-intensity[data-severity="verified"] .kpi-intensity-fill{background:linear-gradient(90deg,#40d69a,#63e6be);box-shadow:0 0 13px #40d69a66}.kpi-intensity[data-severity="unavailable"] .kpi-intensity-track{background:repeating-linear-gradient(135deg,#071d38,#071d38 6px,#0d2d4d 6px,#0d2d4d 12px)}.kpi-intensity[data-severity="unavailable"] .kpi-intensity-fill{width:0!important;background:#6683a2;box-shadow:none;animation:none}.kpi-intensity:focus-visible{outline:2px solid #71e4ff;outline-offset:3px;border-radius:6px}.kpi-intensity[data-severity="unavailable"] .kpi-intensity-value{color:#9bb8d7}.kpi-intensity[data-basis]{position:relative}.kpi-intensity[data-basis]:hover:after,.kpi-intensity[data-basis]:focus-visible:after{content:attr(data-basis);position:absolute;z-index:10010;left:0;top:calc(100% + 7px);width:min(280px,90%);padding:8px;border:1px solid #3979ad;border-radius:8px;background:#03142b;color:#eef7ff;font-size:10px;font-weight:400;line-height:1.4;box-shadow:0 12px 30px #000a;text-transform:none;letter-spacing:normal}@keyframes kpi-intensity-pulse{from{opacity:.72;filter:brightness(.92)}to{opacity:1;filter:brightness(1.18)}}@keyframes kpi-intensity-scan{0%{left:-35%}100%{left:110%}}.kpi-drawer-intensity{margin:0 0 16px;padding:12px;border:1px solid #22517f;border-radius:10px;background:#061d3a}.kpi-drawer-intensity-head{display:flex;justify-content:space-between;gap:10px;align-items:baseline}.kpi-drawer-intensity-head small{color:#9bb8d7;font-size:9px;text-transform:uppercase;letter-spacing:.07em}.kpi-drawer-intensity-head strong{color:#eef7ff;font-size:13px}.kpi-drawer-intensity .kpi-intensity{margin-top:8px;padding-top:0;border-top:0}.kpi-drawer-intensity p{margin:8px 0 0;color:#9bb8d7;font-size:10px;line-height:1.45}.kpi-intensity-live{color:#71e4ff;font-size:9px}@media(prefers-reduced-motion:reduce){.kpi-intensity-fill{animation:none}.kpi-intensity-fill:after{animation:none}.kpi-intensity-fill{transition:none}}';
+    document.head.appendChild(intensityStyle);
   }
 
   function installHeaderSeal() {
@@ -395,8 +550,12 @@
     var status = securityState(meta.status + ' ' + (processing.status || '') + ' ' + (evidence.sha256 || ''));
     if (processing.status === 'verified') status = 'good';
     var body = state.drawer.querySelector('#kpiDrawerBody');
+    var intensity = intensitySpecFor(meta, payload);
+    var liveKpis = payload && payload.kpis ? payload.kpis : {};
+    var observedValue = metricDataKey(meta.label) === 'storageUsed' ? liveKpis.storageUsedLabel : liveKpis[metricDataKey(meta.label)];
     var stats = [
-      ['Observed value', payload && payload.kpis && payload.kpis[metricDataKey(meta.label)] !== undefined ? formatMetric(payload.kpis[metricDataKey(meta.label)]) : meta.value],
+      ['Observed value', observedValue !== undefined && observedValue !== null ? formatMetric(observedValue) : meta.value],
+      ['Live intensity', intensity.label || 'Source unavailable'],
       ['Security state', processing.status ? processing.status.replace(/_/g, ' ') : meta.statusLabel],
       ['Data source', STATIC_PREVIEW ? 'GitHub Pages preview' : 'Tenant database API'],
       ['Refreshed UTC', refreshed]
@@ -415,7 +574,7 @@
     var chain = audit.chainValid === false ? 'Chain verification requires attention' : (audit.chainValid === true ? 'Audit chain verified' : 'Audit chain status returned by service');
     body.innerHTML = '<div class="kpi-drawer-grid">' + stats.map(function (stat) {
       return '<div class="kpi-drawer-card"><small>' + escapeHtml(stat[0]) + '</small><strong>' + escapeHtml(shortValue(stat[1])) + '</strong></div>';
-    }).join('') + '</div><div class="kpi-drawer-notice"><strong>' + escapeHtml(meta.module) + ' / ' + escapeHtml(meta.label) + '</strong><br>UTC timestamps are normalized for this analytical view. ' + escapeHtml(STATIC_PREVIEW ? 'The public preview does not claim a server-side state change.' : 'The response is tenant-scoped and preserves acquisition metadata.') + '</div>' + action + '<section class="kpi-drawer-section"><h3>Acquisition &amp; custody metadata</h3><dl class="kpi-metadata">' + metadata.map(function (item) {
+    }).join('') + '</div><div class="kpi-drawer-notice"><strong>' + escapeHtml(meta.module) + ' / ' + escapeHtml(meta.label) + '</strong><br>UTC timestamps are normalized for this analytical view. ' + escapeHtml(STATIC_PREVIEW ? 'The public preview does not claim a server-side state change.' : 'The response is tenant-scoped and preserves acquisition metadata.') + '</div>' + drawerIntensityMarkup(meta, payload) + action + '<section class="kpi-drawer-section"><h3>Acquisition &amp; custody metadata</h3><dl class="kpi-metadata">' + metadata.map(function (item) {
       return '<div><dt>' + escapeHtml(item[0]) + '</dt><dd class="' + (item[0] === 'SHA-256' || item[0] === 'Artifact / record' ? 'mono' : '') + '">' + escapeHtml(shortValue(item[1])) + '</dd></div>';
     }).join('') + '</dl></section><section class="kpi-drawer-section"><h3>Technical process</h3>' + processMarkup(meta, processing) + '</section><section class="kpi-drawer-section"><h3>Audit history</h3>' + historyMarkup(historyFromPayload(meta, payload)) + '</section><div class="kpi-drawer-notice"><strong>' + escapeHtml(chain) + '.</strong> A drawer view is analytical only; it does not rewrite forensic evidence, acquisition metadata, custody records, database tables, or RLS functions.</div>';
     state.drawer.querySelector('#kpiDrawerTitle').textContent = meta.label;
@@ -431,7 +590,7 @@
     if (/total evidence/.test(text)) return 'totalEvidenceItems';
     if (/verified hashes/.test(text)) return 'verifiedHashes';
     if (/pending intake/.test(text)) return 'pendingIntake';
-    if (/storage used/.test(text)) return 'storageUsedLabel';
+    if (/storage used/.test(text)) return 'storageUsed';
     if (/in review|review/.test(text)) return 'casesInReview';
     return '';
   }
@@ -469,6 +628,7 @@
       card.setAttribute('aria-expanded', 'false');
       card.setAttribute('data-kpi-label', meta.label);
       card.setAttribute('data-kpi-module', meta.module);
+      applyIntensityBar(card, STATIC_PREVIEW ? previewIntensity(meta) : unavailableIntensity('Waiting for the tenant KPI snapshot.'));
       setLiveState(card, STATIC_PREVIEW ? 'Preview · local dataset' : 'Live · connecting', STATIC_PREVIEW ? 'preview' : 'warning');
     });
   }
@@ -579,11 +739,12 @@
     Array.prototype.slice.call(document.querySelectorAll('.page .interactive-kpi')).forEach(function (card) {
       var label = card.getAttribute('data-kpi-label') || metricLabel(card);
       var key = metricDataKey(label);
-      var value = key === 'evidenceIntegrity' && snapshot.evidenceIntegrity ? snapshot.evidenceIntegrity.percentage + '%' : kpis[key];
+      var value = key === 'evidenceIntegrity' && snapshot.evidenceIntegrity ? snapshot.evidenceIntegrity.percentage + '%' : (key === 'storageUsed' ? kpis.storageUsedLabel : kpis[key]);
       if (!key || value === undefined) return;
       var metric = card.querySelector('.metric');
       if (metric) metric.textContent = formatMetric(value);
       card.setAttribute('data-live-value', formatMetric(value));
+      applyIntensityBar(card, intensitySpecFor(metadataFor(card), snapshot));
       var nextState = 'connected';
       if (/critical alerts/i.test(label) && Number(value) > 0) nextState = 'warning';
       if (/pending intake/i.test(label) && Number(value) > 0) nextState = 'warning';
@@ -669,6 +830,8 @@
   function openDrawer(target) {
     if (!target) return;
     installDrawer();
+    var legacyModal = document.getElementById('technicalModal');
+    if (legacyModal) legacyModal.classList.remove('show');
     var meta = metadataFor(target);
     state.previousFocus = target;
     state.active = { meta: meta, target: target };
@@ -851,7 +1014,7 @@
       var interactive = targetFromEvent(target);
       if (!interactive) return;
       event.preventDefault();
-      event.stopPropagation();
+      event.stopImmediatePropagation();
       openDrawer(interactive);
     }, true);
 
@@ -867,8 +1030,19 @@
       var interactive = targetFromEvent(event.target);
       if (!interactive) return;
       event.preventDefault();
-      event.stopPropagation();
+      event.stopImmediatePropagation();
       openDrawer(interactive);
+    }, true);
+
+    /* Legacy modules emit this event for the original technical modal. Capture
+       it before the bubble listener so the v1.1.0 drawer remains the single
+       active analytical surface. */
+    global.addEventListener('centinell:metric-selected', function (event) {
+      var detail = event.detail || {};
+      if (!detail.card) return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      openDrawer(detail.card);
     }, true);
   }
 

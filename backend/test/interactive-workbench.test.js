@@ -12,6 +12,10 @@ test('v1.1.0 interactive workbench covers universal drawers, live events, and le
   assert.match(script, /querySelectorAll\('\.page \.card'\)/);
   assert.match(script, /closest\('\.page table tbody tr'\)/);
   assert.match(script, /kpiDrawer/);
+  assert.match(script, /kpi-intensity/);
+  assert.match(script, /aria-valuenow/);
+  assert.match(script, /event\.stopImmediatePropagation\(\)/);
+  assert.match(script, /centinell:metric-selected/);
   assert.match(script, /EventSource/);
   assert.match(script, /\/api\/v1\/dashboard\/kpis/);
   assert.match(script, /\/api\/v1\/evidence\//);
@@ -36,6 +40,8 @@ test('v1.1.0 live KPI and retry contracts are tenant-scoped and append-only', ()
   assert.match(server, /app\.get\('\/api\/v1\/dashboard\/kpis', requireAuth/);
   assert.match(server, /app\.get\('\/api\/v1\/dashboard\/kpis\/stream', requireAuth/);
   assert.match(server, /text\/event-stream/);
+  assert.match(server, /intensityMetric/);
+  assert.match(server, /KPI_ACTIVE_CASE_CAPACITY/);
   assert.match(server, /app\.get\('\/api\/v1\/evidence\/:evidenceKey', requireAuth/);
   assert.match(server, /app\.post\('\/api\/v1\/evidence\/:evidenceKey\/retry', requireAuth, allow\('admin','analyst'\)/);
   assert.match(server, /app\.post\('\/api\/v1\/evidence\/:evidenceKey\/custody-state', requireAuth, allow\('admin','analyst'\)/);
@@ -52,6 +58,7 @@ test('v1.1.0 live KPI and retry contracts are tenant-scoped and append-only', ()
   assert.match(openapi, /\/evidence\/\{evidenceKey\}\/retry:/);
   assert.match(openapi, /\/evidence\/\{evidenceKey\}\/custody-state:/);
   assert.match(openapi, /KpiSnapshot:/);
+  assert.match(openapi, /intensity:/);
   assert.match(openapi, /HashRetryResponse:/);
   assert.match(openapi, /CustodyStateResponse:/);
 });

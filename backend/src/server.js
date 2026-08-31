@@ -201,6 +201,38 @@ function storagePercent(used, capacity) {
   if (!capacityBytes) return null;
   return Number((usedBytes * 10000n) / capacityBytes) / 100;
 }
+function configuredMetricCapacity(name, fallback) {
+  const value = process.env[name];
+  return /^\d+$/.test(value || '') && Number(value) > 0 ? Number(value) : fallback;
+}
+function ratioPercent(value, capacity) {
+  if (!Number.isFinite(Number(value)) || !Number.isFinite(Number(capacity)) || Number(capacity) <= 0) return null;
+  return Math.max(0, Math.min(100, Number((Number(value) * 100 / Number(capacity)).toFixed(2))));
+}
+function intensitySeverity(percent, semantic) {
+  if (percent === null) return 'unavailable';
+  if (semantic === 'coverage') {
+    if (percent >= 99.99) return 'verified';
+    if (percent >= 95) return 'low';
+    if (percent >= 85) return 'medium';
+    return 'critical';
+  }
+  if (percent >= 90) return 'critical';
+  if (percent >= 75) return 'high';
+  if (percent >= 50) return 'medium';
+  return 'low';
+}
+function intensityMetric(percent, basis, semantic, severityOverride) {
+  const normalized = percent === null ? null : Math.max(0, Math.min(100, Number(Number(percent).toFixed(2))));
+  const severity = normalized === null ? 'unavailable' : (severityOverride || intensitySeverity(normalized, semantic));
+  return {
+    percent: normalized,
+    label: normalized === null ? 'Source unavailable' : normalized + '% ' + (semantic === 'coverage' ? 'coverage' : 'intensity'),
+    semantic: semantic || 'load',
+    severity,
+    basis
+  };
+}
 async function loadKpiSnapshot(organizationId) {
   const capacity = configuredStorageCapacity();
   return withTenant(organizationId, async client => {
@@ -226,16 +258,38 @@ async function loadKpiSnapshot(organizationId) {
     const verifiedHashes = Number(evidenceRow.verified_hashes || 0);
     const pendingIntake = Math.max(totalEvidence - verifiedHashes, 0);
     const usedBytes = String(evidenceRow.storage_bytes || '0');
+    const activeCases = Number(caseRow.active_cases || 0);
+    const criticalAlerts = Number(caseRow.critical_alerts || 0);
+    const casesInReview = Number(caseRow.cases_in_review || 0);
+    const casesThisMonth = Number(caseRow.cases_this_month || 0);
+    const evidenceIntegrityPercent = totalEvidence ? Number((verifiedHashes * 100 / totalEvidence).toFixed(2)) : 100;
+    const activeCaseCapacity = configuredMetricCapacity('KPI_ACTIVE_CASE_CAPACITY', 50);
+    const criticalAlertThreshold = configuredMetricCapacity('KPI_CRITICAL_ALERT_THRESHOLD', 10);
+    const evidenceCapacity = configuredMetricCapacity('KPI_EVIDENCE_CAPACITY', 500);
+    const pendingIntakeThreshold = configuredMetricCapacity('KPI_PENDING_INTAKE_THRESHOLD', 10);
+    const reviewCapacity = configuredMetricCapacity('KPI_REVIEW_CAPACITY', 25);
+    const storageUtilizationPercent = storagePercent(usedBytes, capacity);
+    const intensity = {
+      activeCases: intensityMetric(ratioPercent(activeCases, activeCaseCapacity), activeCases + ' active cases / ' + activeCaseCapacity + ' configured operating capacity.', 'load'),
+      criticalAlerts: intensityMetric(ratioPercent(criticalAlerts, criticalAlertThreshold), criticalAlerts + ' open critical cases / ' + criticalAlertThreshold + ' configured attention threshold.', 'load', criticalAlerts > 0 ? 'critical' : null),
+      assetsAtRisk: intensityMetric(null, 'No tenant asset-inventory source is available in the existing schema; no risk value is asserted.', 'load'),
+      evidenceIntegrity: intensityMetric(evidenceIntegrityPercent, verifiedHashes + ' verified SHA-256 digests / ' + totalEvidence + ' evidence items.', 'coverage'),
+      totalEvidenceItems: intensityMetric(ratioPercent(totalEvidence, evidenceCapacity), totalEvidence + ' evidence items / ' + evidenceCapacity + ' configured intake capacity.', 'load'),
+      verifiedHashes: intensityMetric(totalEvidence ? ratioPercent(verifiedHashes, totalEvidence) : 100, verifiedHashes + ' verified SHA-256 digests / ' + totalEvidence + ' evidence items.', 'coverage'),
+      pendingIntake: intensityMetric(ratioPercent(pendingIntake, pendingIntakeThreshold), pendingIntake + ' pending intake records / ' + pendingIntakeThreshold + ' configured processing threshold.', 'load'),
+      storageUsed: intensityMetric(storageUtilizationPercent, storageUtilizationPercent === null ? 'STORAGE_CAPACITY_BYTES is not configured; utilization is not asserted.' : usedBytes + ' bytes used / ' + capacity + ' bytes allocated.', 'load'),
+      casesInReview: intensityMetric(ratioPercent(casesInReview, reviewCapacity), casesInReview + ' cases in review / ' + reviewCapacity + ' configured review capacity.', 'load')
+    };
     return {
       version: PLATFORM_VERSION,
       generatedAt: new Date().toISOString(),
       source: 'tenant_database',
       tenantScoped: true,
       kpis: {
-        activeCases: Number(caseRow.active_cases || 0),
-        criticalAlerts: Number(caseRow.critical_alerts || 0),
-        casesInReview: Number(caseRow.cases_in_review || 0),
-        casesThisMonth: Number(caseRow.cases_this_month || 0),
+        activeCases,
+        criticalAlerts,
+        casesInReview,
+        casesThisMonth,
         totalEvidenceItems: totalEvidence,
         verifiedHashes,
         pendingIntake,
@@ -250,8 +304,9 @@ async function loadKpiSnapshot(organizationId) {
         totalItems: totalEvidence,
         verifiedHashes,
         pendingIntake,
-        percentage: totalEvidence ? Number((verifiedHashes * 100 / totalEvidence).toFixed(2)) : 100
+        percentage: evidenceIntegrityPercent
       },
+      intensity,
       storage: {
         usedBytes,
         usedLabel: formatBytes(usedBytes),
