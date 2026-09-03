@@ -5,6 +5,9 @@
 - [ ] Provision production PostgreSQL with encrypted backups and test restoration.
 - [ ] Set a unique 32+ character `JWT_SECRET`; keep all secrets in Railway variables.
 - [ ] Configure the production domain, TLS, `ALLOWED_ORIGINS`, support email, and privacy/terms links.
+- [ ] In Payhip, create the Centinell subscription product and configure the `paid`, `refunded`, `subscription.created`, and `subscription.deleted` webhooks to `https://YOUR-DOMAIN/api/v1/billing/payhip/webhook`.
+- [ ] Set `PAYHIP_API_KEY`, `PAYHIP_PRODUCT_KEY`, and `PAYHIP_ENFORCE_BILLING=true` only in DigitalOcean encrypted environment variables.
+- [ ] Complete one real or test purchase: confirm the webhook returns HTTP 200, register with the purchase email, then verify that a refund or cancellation blocks future sign-in.
 - [ ] Configure the server-side AI key or disable AI until configured.
 - [ ] Run registration, login, lockout, logout, tenant-isolation, case creation, audit, and AI failure-path tests.
 - [ ] Create two test organizations and prove neither can access the other's records.
