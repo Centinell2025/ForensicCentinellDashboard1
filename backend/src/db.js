@@ -56,7 +56,15 @@ async function migrate() {
 }
 
 async function migrateOnce() {
-  await query(`
+  const client = await getPool().connect();
+  let lockHeld = false;
+  try {
+    // Node's test runner starts test files in separate processes. A process-local
+    // promise cannot protect DDL from those concurrent workers, so serialize the
+    // entire schema update with a PostgreSQL advisory lock on one connection.
+    await client.query("SELECT pg_advisory_lock(hashtext('centinell-forensics-schema-migration'))");
+    lockHeld = true;
+    await client.query(`
     CREATE EXTENSION IF NOT EXISTS pgcrypto;
     CREATE TABLE IF NOT EXISTS organizations (
       id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -231,9 +239,13 @@ async function migrateOnce() {
     CREATE POLICY anchors_tenant_isolation ON audit_anchors USING (organization_id = nullif(current_setting('app.current_organization_id',true),'')::uuid) WITH CHECK (organization_id = nullif(current_setting('app.current_organization_id',true),'')::uuid);
     DROP POLICY IF EXISTS corporate_records_tenant_isolation ON corporate_records;
     CREATE POLICY corporate_records_tenant_isolation ON corporate_records USING (organization_id = nullif(current_setting('app.current_organization_id',true),'')::uuid) WITH CHECK (organization_id = nullif(current_setting('app.current_organization_id',true),'')::uuid);
-  `);
-  const forensicCopilotMigration = fs.readFileSync(path.join(__dirname, '..', 'migrations', '20260830_forensic_copilot.sql'), 'utf8');
-  await query(forensicCopilotMigration);
+    `);
+    const forensicCopilotMigration = fs.readFileSync(path.join(__dirname, '..', 'migrations', '20260830_forensic_copilot.sql'), 'utf8');
+    await client.query(forensicCopilotMigration);
+  } finally {
+    if (lockHeld) await client.query("SELECT pg_advisory_unlock(hashtext('centinell-forensics-schema-migration'))");
+    client.release();
+  }
 }
 
 module.exports = { getPool, query, transaction, withTenant, migrate };
