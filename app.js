@@ -12,11 +12,11 @@
   themeToggle.type = 'button'; themeToggle.className = 'btn'; themeToggle.id = 'themeToggle';
   const applyTheme = mode => {
     document.body.classList.toggle('theme-light', mode === 'light');
-    themeToggle.textContent = mode === 'light' ? 'Use navy theme' : 'Use white background';
+    themeToggle.textContent = mode === 'light' ? 'Use military blue' : 'Use white background';
     localStorage.setItem('centinell:theme', mode);
   };
-  applyTheme(localStorage.getItem('centinell:theme') || 'navy');
-  themeToggle.addEventListener('click', () => applyTheme(document.body.classList.contains('theme-light') ? 'navy' : 'light'));
+  applyTheme(localStorage.getItem('centinell:theme') || 'military');
+  themeToggle.addEventListener('click', () => applyTheme(document.body.classList.contains('theme-light') ? 'military' : 'light'));
   document.querySelector('.actions')?.prepend(themeToggle);
 
   let mode = 'login';
