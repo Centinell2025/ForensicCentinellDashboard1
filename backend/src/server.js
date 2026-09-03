@@ -728,7 +728,7 @@ app.post('/api/v1/investigation/execute', requireAuth, allow('admin','analyst','
       return { valid:(await client.query('SELECT centinell_verify_audit_chain($1) AS valid', [req.auth.org])).rows[0].valid };
     });
   }
-  await audit(req, 'investigation.command_executed', 'investigation_console', null, { command:input.command, argumentCharacters:input.argument.length });
+  await audit(req, 'investigation.command_executed', 'investigation_console', null, { command:input.command, argumentCharacters:input.argument.length, argumentSha256:crypto.createHash('sha256').update(input.argument, 'utf8').digest('hex'), dataClassification:'tenant_user_input' });
   res.json({ command:input.command, result, executedAt:new Date().toISOString() });
 }));
 app.post('/api/v1/cases', requireAuth, allow('admin','analyst'), asyncRoute(async (req, res) => {
