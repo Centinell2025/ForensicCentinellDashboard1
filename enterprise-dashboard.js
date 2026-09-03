@@ -16,10 +16,45 @@ function installInvestigationModule(){
   var siemButton=document.querySelector('.nav button[data-page="siem"]'),nav=siemButton&&siemButton.parentElement,main=document.querySelector('main.main');
   if(!nav||!main||document.getElementById('investigation'))return;
   var button=document.createElement('button');button.dataset.page='investigation';button.innerHTML='<span>⌨ Investigation Console</span>';nav.insertBefore(button,siemButton.nextSibling);
-  var page=document.createElement('section');page.className='page';page.id='investigation';page.innerHTML='<div class="heading"><div><h1>Advanced Investigation Console</h1><p>Allowlisted defensive analysis with tenant-scoped cases, evidence, audit, packet metadata, STIX/TAXII, and VirusTotal.</p></div><span class="chip good">Audited · No OS shell</span></div><div class="grid4"><div class="card"><div class="sub">Authorized Commands</div><div class="metric">7</div><span class="good">Server allowlist</span></div><div class="card"><div class="sub">Tenant Isolation</div><div class="metric">RLS</div><span class="good">organization_id enforced</span></div><div class="card"><div class="sub">Threat Intelligence</div><div class="metric">STIX</div><span class="medium">TAXII + VirusTotal ready</span></div><div class="card"><div class="sub">Audit Coverage</div><div class="metric">100%</div><span class="good">SHA-256 chained</span></div></div><div class="panel console-panel" style="margin-top:13px"><div class="head"><h2>Defensive command simulator</h2><span class="muted">Commands execute through authenticated API routes only</span></div><div class="console-controls"><select id="consoleCommand"><option>help</option><option>cases</option><option>evidence</option><option>audit</option><option>chain-verify</option><option>ioc</option><option>packet-summary</option></select><input id="consoleArgument" placeholder="IOC, or JSON packet metadata for packet-summary"><button class="btn primary" id="consoleRun">Run authorized analysis</button></div><pre id="consoleOutput" class="console-output" tabindex="0">centinell&gt; Select help to view the defensive command allowlist.</pre><div class="info">This is not a system shell. Arbitrary commands, exploitation, credential access, persistence, and unrestricted network scanning are intentionally unavailable.</div></div>';
+  var page=document.createElement('section');page.className='page';page.id='investigation';page.innerHTML='<div class="heading"><div><h1>Advanced Investigation Console</h1><p>Allowlisted defensive analysis with tenant-scoped cases, evidence, audit, packet metadata, STIX/TAXII, and VirusTotal.</p></div><span class="chip good">Audited · No OS shell</span></div><div class="grid4"><div class="card"><div class="sub">Authorized Commands</div><div class="metric">11</div><span class="good">Server allowlist</span></div><div class="card"><div class="sub">Tenant Isolation</div><div class="metric">RLS</div><span class="good">organization_id enforced</span></div><div class="card"><div class="sub">Threat Intelligence</div><div class="metric">STIX</div><span class="medium">TAXII + VirusTotal ready</span></div><div class="card"><div class="sub">Audit Coverage</div><div class="metric">100%</div><span class="good">SHA-256 chained</span></div></div><div class="panel console-panel" style="margin-top:13px"><div class="head"><h2>Real-data investigation workspace</h2><span class="muted">Inputs remain tenant-scoped and every execution is audit-recorded</span></div><div class="console-controls"><select id="consoleCommand" aria-label="Analysis type"><option>help</option><option>cases</option><option>evidence</option><option>audit</option><option>chain-verify</option><option>ioc</option><option>url-analysis</option><option>packet-summary</option><option>network-summary</option><option>email-headers</option><option>timeline-summary</option></select><textarea id="consoleArgument" rows="4" aria-label="Analysis input" placeholder="Paste an IP, domain, URL, SHA-256, approved email headers, or JSON metadata. Do not paste credentials or unapproved sensitive evidence."></textarea><button class="btn primary" id="consoleRun">Run authorized analysis</button></div><pre id="consoleOutput" class="console-output" tabindex="0">centinell&gt; Select help to view the defensive command allowlist.</pre><div class="info">This is not a system shell. Arbitrary commands, exploitation, credential access, persistence, and unrestricted network scanning are intentionally unavailable.</div></div>';
   main.appendChild(page);
 }
 installInvestigationModule();
+
+function initRealDataInvestigationConsole(){
+  var hints={
+    ioc:'Enter one IP, domain, URL, or SHA-256 hash.',
+    'url-analysis':'Paste one HTTP or HTTPS URL.',
+    'packet-summary':'Paste a JSON array: [{"source":"10.0.0.2","destination":"198.51.100.8","protocol":"dns","length":72}]',
+    'network-summary':'Paste approved network metadata JSON; no packet payloads are required.',
+    'email-headers':'Paste headers only (From, Reply-To, Received, Message-ID).',
+    'timeline-summary':'Paste a JSON array with timestamp, type, source, and description.'
+  };
+  document.addEventListener('change',function(event){
+    if(event.target&&event.target.id==='consoleCommand'){
+      var field=document.getElementById('consoleArgument');
+      if(field)field.placeholder=hints[event.target.value]||'This command needs no input.';
+    }
+  });
+  document.addEventListener('click',async function(event){
+    var button=event.target&&event.target.closest&&event.target.closest('#consoleRun');
+    if(!button)return;
+    var command=document.getElementById('consoleCommand'), argument=document.getElementById('consoleArgument'), output=document.getElementById('consoleOutput');
+    if(!command||!argument||!output)return;
+    if(location.hostname.endsWith('github.io')){
+      output.textContent='Demo mode: real company data is never sent to GitHub Pages. Sign in to the deployed production workspace to run tenant-scoped analysis.';
+      return;
+    }
+    button.disabled=true;output.textContent='centinell> Running authenticated analysis…';
+    try{
+      var response=await window.CentinellAPI.request('/api/v1/investigation/execute',{method:'POST',body:JSON.stringify({command:command.value,argument:argument.value})});
+      output.textContent=JSON.stringify(response,null,2);
+    }catch(error){output.textContent='Analysis unavailable: '+error.message;}
+    finally{button.disabled=false;}
+  });
+}
+initRealDataInvestigationConsole();
+
 
 /* Corporate ecosystem: launched from Command Center, with independent SPA routes. */
 var corporateModules=[
