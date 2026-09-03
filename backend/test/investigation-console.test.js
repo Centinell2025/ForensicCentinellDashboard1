@@ -27,7 +27,7 @@ test('packet summary aggregates bounded metadata and seals it with SHA-256', () 
 
 
 test('URL, network, email, and timeline analyzers produce forensic summaries', () => {
-  assert.equal(classifyIndicator('https://xn--paypa1-9za.example/login').type, 'url');
+  assert.equal(classifyIndicator('https://xn--bcher-kva.example/login').type, 'url');
   assert.equal(networkSummary(JSON.stringify([{source:'10.0.0.2',destination:'198.51.100.9',protocol:'tcp',length:44}])).uniqueConversations, 1);
   assert.ok(emailHeaderSummary('From: a@example.org\nReply-To: b@example.net\nMessage-ID: <id>\nReceived: by mx').suspiciousSignals.includes('reply-to-domain-mismatch'));
   assert.equal(timelineSummary(JSON.stringify([{timestamp:'2026-09-02T12:01:00Z',type:'login'},{timestamp:'2026-09-02T12:00:00Z',type:'file'}])).events[0].type, 'file');
