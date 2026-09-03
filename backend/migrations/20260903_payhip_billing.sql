@@ -21,7 +21,7 @@ CREATE INDEX IF NOT EXISTS payhip_entitlements_email_status_idx
 CREATE TABLE IF NOT EXISTS organization_billing (
   organization_id uuid PRIMARY KEY REFERENCES organizations(id) ON DELETE CASCADE,
   provider text NOT NULL CHECK (provider = 'payhip'),
-  entitlement_id uuid NOT NULL REFERENCES payhip_entitlements(id),
+  entitlement_id uuid NOT NULL UNIQUE REFERENCES payhip_entitlements(id),
   status text NOT NULL CHECK (status IN ('active','refunded','canceled')),
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
