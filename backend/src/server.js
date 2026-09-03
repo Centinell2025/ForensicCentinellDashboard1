@@ -139,6 +139,10 @@ app.post('/api/v1/billing/payhip/webhook', asyncRoute(async (req, res) => {
   const result = await applyPayhipEvent(req.body || {});
   res.status(200).json(result);
 }));
+app.get('/api/v1/billing/checkout', (_req, res) => {
+  const url = process.env.PAYHIP_CHECKOUT_URL || '';
+  res.json({ available: Boolean(url), url });
+});
 app.post('/api/v1/auth/register', authLimiter, asyncRoute(async (req, res) => {
   const input = registerSchema.parse(req.body);
   if (billingRequired() && !payhipConfigured()) throw httpError(503, 'Customer registration is temporarily unavailable while billing is configured');
