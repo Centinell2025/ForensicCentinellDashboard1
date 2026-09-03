@@ -240,8 +240,14 @@ async function migrateOnce() {
     DROP POLICY IF EXISTS corporate_records_tenant_isolation ON corporate_records;
     CREATE POLICY corporate_records_tenant_isolation ON corporate_records USING (organization_id = nullif(current_setting('app.current_organization_id',true),'')::uuid) WITH CHECK (organization_id = nullif(current_setting('app.current_organization_id',true),'')::uuid);
     `);
-    const forensicCopilotMigration = fs.readFileSync(path.join(__dirname, '..', 'migrations', '20260830_forensic_copilot.sql'), 'utf8');
-    await client.query(forensicCopilotMigration);
+    const migrations = [
+      '20260830_forensic_copilot.sql',
+      '20260903_payhip_billing.sql'
+    ];
+    for (const migrationName of migrations) {
+      const migration = fs.readFileSync(path.join(__dirname, '..', 'migrations', migrationName), 'utf8');
+      await client.query(migration);
+    }
   } finally {
     if (lockHeld) await client.query("SELECT pg_advisory_unlock(hashtext('centinell-forensics-schema-migration'))");
     client.release();
