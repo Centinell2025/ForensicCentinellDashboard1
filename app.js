@@ -5,15 +5,18 @@
   const api = (path, options = {}) => window.CentinellAPI.request(path, options);
   const auth = document.createElement('div');
   auth.id = 'authGate';
-  auth.innerHTML = `<div class="auth-card"><div class="auth-logo">C</div><h1>Centinell Forensics Enterprise</h1><p>Secure organizational access</p><div class="auth-tabs"><button data-mode="login" class="active">Sign in</button><button data-mode="register">Create account</button></div><form id="authForm"><div id="registerFields" hidden><label>Organization<input name="organization" autocomplete="organization" minlength="2"></label><label>Full name<input name="fullName" autocomplete="name" minlength="2"></label><p class="muted">Use the same business email used for your active Payhip purchase.</p></div><label>Business email<input name="email" type="email" autocomplete="email" required></label><label>Password<input name="password" type="password" autocomplete="current-password" required></label><button class="btn primary" type="submit">Continue</button><div id="authError" role="alert"></div></form><small>Paid access · Tenant isolation · Audit logging</small></div>`;
+  auth.innerHTML = `<div class="auth-card"><div class="auth-logo">C</div><h1>Centinell Forensics Enterprise</h1><p>Secure organizational access</p><div class="auth-tabs"><button data-mode="login" class="active">Sign in</button><button data-mode="register">Create account</button></div><a id="buyAccess" class="btn primary" href="#" target="_blank" rel="noopener" hidden>Buy secure access</a><form id="authForm"><div id="registerFields" hidden><label>Organization<input name="organization" autocomplete="organization" minlength="2"></label><label>Full name<input name="fullName" autocomplete="name" minlength="2"></label><p class="muted">Purchase first, then use the same business email to create your organization.</p></div><label>Business email<input name="email" type="email" autocomplete="email" required></label><label>Password<input name="password" type="password" autocomplete="current-password" minlength="12" required></label><label id="confirmPasswordField" hidden>Confirm password<input name="confirmPassword" type="password" autocomplete="new-password" minlength="12"></label><button class="btn primary" type="submit">Continue</button><div id="authError" role="alert"></div></form><small>Paid access · Tenant isolation · Audit logging</small></div>`;
   document.body.appendChild(auth);
   let mode = 'login';
   const form = document.getElementById('authForm');
   auth.querySelectorAll('[data-mode]').forEach(button => button.addEventListener('click', () => {
     mode = button.dataset.mode;
     auth.querySelectorAll('[data-mode]').forEach(b => b.classList.toggle('active', b === button));
-    document.getElementById('registerFields').hidden = mode !== 'register';
-    form.password.autocomplete = mode === 'register' ? 'new-password' : 'current-password';
+    const registering = mode === 'register';
+    document.getElementById('registerFields').hidden = !registering;
+    document.getElementById('confirmPasswordField').hidden = !registering;
+    form.confirmPassword.required = registering;
+    form.password.autocomplete = registering ? 'new-password' : 'current-password';
   }));
   function enter(user) {
     auth.classList.add('authenticated');
@@ -36,10 +39,21 @@
     event.preventDefault();
     const error = document.getElementById('authError'); error.textContent = '';
     const body = Object.fromEntries(new FormData(form));
+    if (mode === 'register' && body.password !== body.confirmPassword) {
+      error.textContent = 'Passwords do not match.';
+      return;
+    }
+    delete body.confirmPassword;
     try { const data = await api(`/api/v1/auth/${mode}`, { method:'POST', body:JSON.stringify(body) }); enter(data.user); }
     catch (e) { error.textContent = e.message; }
   });
-  if (!staticPreview) api('/api/v1/auth/me').then(data => enter(data.user)).catch(() => {});
+  if (!staticPreview) {
+    api('/api/v1/auth/me').then(data => enter(data.user)).catch(() => {});
+    api('/api/v1/billing/checkout').then(data => {
+      const buy = document.getElementById('buyAccess');
+      if (data.available && data.url) { buy.href = data.url; buy.hidden = false; }
+    }).catch(() => {});
+  }
 
   const caseForm = document.getElementById('newCaseForm');
   if (caseForm) caseForm.addEventListener('submit', async event => {
