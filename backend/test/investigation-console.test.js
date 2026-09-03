@@ -1,9 +1,9 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { COMMANDS, classifyIndicator, packetSummary } = require('../src/security/investigation-console');
+const { COMMANDS, classifyIndicator, packetSummary, networkSummary, emailHeaderSummary, timelineSummary } = require('../src/security/investigation-console');
 
 test('investigation console exposes only the defensive allowlist', () => {
-  assert.deepEqual(COMMANDS, ['help','cases','evidence','audit','chain-verify','ioc','packet-summary']);
+  assert.deepEqual(COMMANDS, ['help','cases','evidence','audit','chain-verify','ioc','packet-summary','network-summary','url-analysis','email-headers','timeline-summary']);
   assert.equal(COMMANDS.includes('shell'), false);
   assert.equal(COMMANDS.includes('scan'), false);
 });
@@ -23,4 +23,12 @@ test('packet summary aggregates bounded metadata and seals it with SHA-256', () 
   assert.equal(result.packetCount, 2);
   assert.equal(result.totalBytes, 200);
   assert.match(result.sha256, /^[a-f0-9]{64}$/);
+});
+
+
+test('URL, network, email, and timeline analyzers produce forensic summaries', () => {
+  assert.equal(classifyIndicator('https://xn--paypa1-9za.example/login').type, 'url');
+  assert.equal(networkSummary(JSON.stringify([{source:'10.0.0.2',destination:'198.51.100.9',protocol:'tcp',length:44}])).uniqueConversations, 1);
+  assert.ok(emailHeaderSummary('From: a@example.org\nReply-To: b@example.net\nMessage-ID: <id>\nReceived: by mx').suspiciousSignals.includes('reply-to-domain-mismatch'));
+  assert.equal(timelineSummary(JSON.stringify([{timestamp:'2026-09-02T12:01:00Z',type:'login'},{timestamp:'2026-09-02T12:00:00Z',type:'file'}])).events[0].type, 'file');
 });
