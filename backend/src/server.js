@@ -83,6 +83,45 @@ async function audit(req, action, entityType, entityId, metadata = {}, client) {
 function asyncRoute(handler) { return (req, res, next) => Promise.resolve(handler(req, res, next)).catch(next); }
 function httpError(status, title) { const error = new Error(title); error.status = status; return error; }
 function optionalUuid(value) { return value == null || String(value).trim() === '' ? null : z.uuid().parse(String(value)); }
+function billingRequired() { return process.env.PAYHIP_ENFORCE_BILLING === 'true' || process.env.NODE_ENV === 'production'; }
+function payhipConfigured() { return Boolean(process.env.PAYHIP_API_KEY && process.env.PAYHIP_PRODUCT_KEY); }
+function secureEqual(left, right) {
+  const a = Buffer.from(String(left || ''), 'utf8');
+  const b = Buffer.from(String(right || ''), 'utf8');
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
+}
+function payhipSignature() { return crypto.createHash('sha256').update(process.env.PAYHIP_API_KEY || '', 'utf8').digest('hex'); }
+function payhipProductMatches(payload) {
+  const expected = process.env.PAYHIP_PRODUCT_KEY;
+  if (!expected) return false;
+  const itemKeys = Array.isArray(payload.items) ? payload.items.map(item => item.product_key) : [];
+  return payload.product_link === expected || itemKeys.includes(expected);
+}
+async function applyPayhipEvent(payload) {
+  if (!payhipConfigured() || !secureEqual(payload.signature, payhipSignature())) throw httpError(401, 'Invalid Payhip webhook signature');
+  if (!payhipProductMatches(payload)) return { ignored: true };
+  const type = String(payload.type || '');
+  const email = String(payload.customer_email || payload.email || '').trim().toLowerCase();
+  if (!email) throw httpError(400, 'Payhip webhook is missing the buyer email');
+  const eventId = `${type}:${payload.subscription_id || payload.id || ''}`;
+  if (eventId.endsWith(':')) throw httpError(400, 'Payhip webhook is missing an event identifier');
+  const status = type === 'refunded' ? 'refunded' : type === 'subscription.deleted' ? 'canceled' : 'active';
+  if (!['paid','refunded','subscription.created','subscription.deleted'].includes(type)) return { ignored: true };
+  const entitlement = await transaction(async client => {
+    const existing = await client.query(`SELECT id FROM payhip_entitlements
+      WHERE provider_event_id=$1 OR purchase_id IS NOT DISTINCT FROM $2 OR subscription_id IS NOT DISTINCT FROM $3
+      ORDER BY updated_at DESC LIMIT 1 FOR UPDATE`, [eventId, payload.id || null, payload.subscription_id || null]);
+    const values = [eventId, payload.id || null, payload.subscription_id || null, email, process.env.PAYHIP_PRODUCT_KEY, payload.plan_name || null, status, JSON.stringify(payload)];
+    const result = existing.rowCount
+      ? await client.query(`UPDATE payhip_entitlements SET provider_event_id=$1,purchase_id=$2,subscription_id=$3,buyer_email=$4,product_key=$5,plan_name=$6,status=$7,payload=$8,updated_at=now()
+          WHERE id=$9 RETURNING id,status`, [...values, existing.rows[0].id])
+      : await client.query(`INSERT INTO payhip_entitlements(provider_event_id,purchase_id,subscription_id,buyer_email,product_key,plan_name,status,payload)
+          VALUES($1,$2,$3,$4,$5,$6,$7,$8) RETURNING id,status`, values);
+    await client.query('UPDATE organization_billing SET status=$1,updated_at=now() WHERE entitlement_id=$2', [status, result.rows[0].id]);
+    return result.rows[0];
+  });
+  return { entitlementId: entitlement.id, status: entitlement.status };
+}
 function requestAuditAnchor(organizationId) {
   if (!process.env.AUDIT_ANCHOR_URL) return;
   anchorTenant(organizationId).catch(error => console.error(JSON.stringify({ level:'error', event:'audit.anchor_failed', message:error.message })));
@@ -94,14 +133,29 @@ async function assertCaseTenant(client, organizationId, caseId) {
 }
 
 const registerSchema = z.object({ organization: z.string().trim().min(2).max(120), fullName: z.string().trim().min(2).max(120), email: z.email().max(254), password: z.string().min(12).max(128) });
+app.post('/api/v1/billing/payhip/webhook', asyncRoute(async (req, res) => {
+  const result = await applyPayhipEvent(req.body || {});
+  res.status(200).json(result);
+}));
 app.post('/api/v1/auth/register', authLimiter, asyncRoute(async (req, res) => {
   const input = registerSchema.parse(req.body);
+  if (billingRequired() && !payhipConfigured()) throw httpError(503, 'Customer registration is temporarily unavailable while billing is configured');
   const hash = await bcrypt.hash(input.password, 12);
   const slugBase = input.organization.toLowerCase().normalize('NFKD').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 50) || 'organization';
   const user = await transaction(async client => {
+    let entitlement = null;
+    if (billingRequired()) {
+      const result = await client.query(`SELECT id,status FROM payhip_entitlements
+        WHERE lower(buyer_email)=lower($1) AND product_key=$2 AND status='active'
+        ORDER BY updated_at DESC LIMIT 1 FOR UPDATE`, [input.email, process.env.PAYHIP_PRODUCT_KEY]);
+      entitlement = result.rows[0];
+      if (!entitlement) throw httpError(403, 'An active Payhip purchase is required before creating an organization');
+    }
     const org = await client.query('INSERT INTO organizations (name, slug) VALUES ($1,$2) RETURNING id,name', [input.organization, `${slugBase}-${crypto.randomBytes(3).toString('hex')}`]);
     const result = await client.query('INSERT INTO users (organization_id,email,password_hash,full_name,role) VALUES ($1,lower($2),$3,$4,$5) RETURNING id,organization_id,email,full_name,role', [org.rows[0].id, input.email, hash, input.fullName, 'admin']);
     await client.query("SELECT set_config('app.current_organization_id', $1, true)", [org.rows[0].id]);
+    if (entitlement) await client.query(`INSERT INTO organization_billing(organization_id,provider,entitlement_id,status)
+      VALUES($1,'payhip',$2,'active')`, [org.rows[0].id, entitlement.id]);
     await client.query('INSERT INTO audit_events (organization_id,actor_id,action,entity_type,entity_id) VALUES ($1,$2,$3,$4,$5)', [org.rows[0].id, result.rows[0].id, 'organization.created', 'organization', org.rows[0].id]);
     return { ...result.rows[0], organization_name: org.rows[0].name };
   });
@@ -114,6 +168,10 @@ app.post('/api/v1/auth/login', authLimiter, asyncRoute(async (req, res) => {
   const input = loginSchema.parse(req.body);
   const result = await query('SELECT u.*,o.name organization_name FROM users u JOIN organizations o ON o.id=u.organization_id WHERE lower(u.email)=lower($1)', [input.email]);
   const user = result.rows[0];
+  if (billingRequired() && user) {
+    const billing = await query('SELECT status FROM organization_billing WHERE organization_id=$1', [user.organization_id]);
+    if (!billing.rows[0] || billing.rows[0].status !== 'active') return res.status(403).json({ title: 'Your Payhip subscription is not active', status: 403 });
+  }
   if (!user || (user.locked_until && new Date(user.locked_until) > new Date()) || !(await bcrypt.compare(input.password, user.password_hash))) {
     if (user) await query("UPDATE users SET failed_attempts=failed_attempts+1, locked_until=CASE WHEN failed_attempts>=4 THEN now()+interval '15 minutes' ELSE locked_until END WHERE id=$1", [user.id]);
     return res.status(401).json({ title: 'Invalid email or password', status: 401 });
