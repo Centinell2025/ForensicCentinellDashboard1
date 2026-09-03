@@ -7,6 +7,18 @@
   auth.id = 'authGate';
   auth.innerHTML = `<div class="auth-card"><div class="auth-logo">C</div><h1>Centinell Forensics Enterprise</h1><p>Secure organizational access</p><div class="auth-tabs"><button data-mode="login" class="active">Sign in</button><button data-mode="register">Create account</button></div><a id="buyAccess" class="btn primary" href="#" target="_blank" rel="noopener" hidden>Buy secure access</a><form id="authForm"><div id="registerFields" hidden><label>Organization<input name="organization" autocomplete="organization" minlength="2"></label><label>Full name<input name="fullName" autocomplete="name" minlength="2"></label><p class="muted">Purchase first, then use the same business email to create your organization.</p></div><label>Business email<input name="email" type="email" autocomplete="email" required></label><label>Password<input name="password" type="password" autocomplete="current-password" minlength="12" required></label><label id="confirmPasswordField" hidden>Confirm password<input name="confirmPassword" type="password" autocomplete="new-password" minlength="12"></label><button class="btn primary" type="submit">Continue</button><div id="authError" role="alert"></div></form><small>Paid access · Tenant isolation · Audit logging</small></div>`;
   document.body.appendChild(auth);
+
+  const themeToggle = document.createElement('button');
+  themeToggle.type = 'button'; themeToggle.className = 'btn'; themeToggle.id = 'themeToggle';
+  const applyTheme = mode => {
+    document.body.classList.toggle('theme-light', mode === 'light');
+    themeToggle.textContent = mode === 'light' ? 'Use navy theme' : 'Use white background';
+    localStorage.setItem('centinell:theme', mode);
+  };
+  applyTheme(localStorage.getItem('centinell:theme') || 'navy');
+  themeToggle.addEventListener('click', () => applyTheme(document.body.classList.contains('theme-light') ? 'navy' : 'light'));
+  document.querySelector('.actions')?.prepend(themeToggle);
+
   let mode = 'login';
   const form = document.getElementById('authForm');
   auth.querySelectorAll('[data-mode]').forEach(button => button.addEventListener('click', () => {
