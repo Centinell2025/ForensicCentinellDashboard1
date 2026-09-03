@@ -109,7 +109,9 @@ async function applyPayhipEvent(payload) {
   if (!['paid','refunded','subscription.created','subscription.deleted'].includes(type)) return { ignored: true };
   const entitlement = await transaction(async client => {
     const existing = await client.query(`SELECT id FROM payhip_entitlements
-      WHERE provider_event_id=$1 OR purchase_id IS NOT DISTINCT FROM $2 OR subscription_id IS NOT DISTINCT FROM $3
+      WHERE provider_event_id=$1
+        OR ($2::text IS NOT NULL AND purchase_id=$2)
+        OR ($3::text IS NOT NULL AND subscription_id=$3)
       ORDER BY updated_at DESC LIMIT 1 FOR UPDATE`, [eventId, payload.id || null, payload.subscription_id || null]);
     const values = [eventId, payload.id || null, payload.subscription_id || null, email, process.env.PAYHIP_PRODUCT_KEY, payload.plan_name || null, status, JSON.stringify(payload)];
     const result = existing.rowCount
@@ -147,6 +149,7 @@ app.post('/api/v1/auth/register', authLimiter, asyncRoute(async (req, res) => {
     if (billingRequired()) {
       const result = await client.query(`SELECT id,status FROM payhip_entitlements
         WHERE lower(buyer_email)=lower($1) AND product_key=$2 AND status='active'
+          AND NOT EXISTS (SELECT 1 FROM organization_billing billing WHERE billing.entitlement_id=payhip_entitlements.id)
         ORDER BY updated_at DESC LIMIT 1 FOR UPDATE`, [input.email, process.env.PAYHIP_PRODUCT_KEY]);
       entitlement = result.rows[0];
       if (!entitlement) throw httpError(403, 'An active Payhip purchase is required before creating an organization');
