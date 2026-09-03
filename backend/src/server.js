@@ -14,7 +14,7 @@ const { query, transaction, withTenant, migrate } = require('./db');
 const { emitSecurityEvent } = require('./security/telemetry');
 const metrics = require('./metrics');
 const { anchorAllTenants, anchorTenant } = require('./security/audit-anchor');
-const { COMMANDS, classifyIndicator, virusTotalLookup, taxiiLookup, packetSummary } = require('./security/investigation-console');
+const { COMMANDS, classifyIndicator, virusTotalLookup, taxiiLookup, packetSummary, networkSummary, analyzeUrl, emailHeaderSummary, timelineSummary } = require('./security/investigation-console');
 const { DEFAULT_ADVISOR_DIRECTIVE, CENTINELL_AI_MODEL, normalizeFinding } = require('../../forensic-advisor');
 
 const app = express();
@@ -703,6 +703,16 @@ app.post('/api/v1/investigation/execute', requireAuth, allow('admin','analyst','
     result = { commands: COMMANDS, safety: 'Allowlisted defensive operations only; no operating-system shell is exposed.' };
   } else if (input.command === 'packet-summary') {
     result = packetSummary(input.argument);
+  } else if (input.command === 'network-summary') {
+    result = networkSummary(input.argument);
+  } else if (input.command === 'url-analysis') {
+    const indicator = analyzeUrl(input.argument);
+    const [virusTotal, taxii] = await Promise.all([virusTotalLookup(indicator), taxiiLookup(indicator)]);
+    result = { indicator, virusTotal, taxii };
+  } else if (input.command === 'email-headers') {
+    result = emailHeaderSummary(input.argument);
+  } else if (input.command === 'timeline-summary') {
+    result = timelineSummary(input.argument);
   } else if (input.command === 'ioc') {
     const indicator = classifyIndicator(input.argument);
     const local = await withTenant(req.auth.org, client => client.query(`SELECT id,action,entity_type "entityType",
